@@ -1,0 +1,16 @@
+*.synctex.gz
+*.aux
+*.log
+*.blg
+*.toc
+*.lot
+*.lof
+*.bbl
+*.spl
+*.out
+modelComposition_UMPrepo.pdf
+abstract.pdf
+mainBody.pdf
+0abstract.pdf
+factoryOptima-num.pdf
+SODA-M.pdf
