@@ -61,278 +61,126 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 
 
 \begin{abstract}{\small\noindent
-Smart Manufacturing (SM) systems have to optimize  manufacturing activities at the machine, unit or entire manufacturing facility level  as well as adapting the manufacturing process on-the-fly as required by a variety of conditions (e.g., machine breakdowns and/or slowdowns) and unexpected variations in demands. This paper provides a framework for autonomic smart manufacturing (ASM) that relies on a variety of models for its support: (a) a process model to represent machines, part inventories, and the flow of parts through machines in a discrete manufacturing floor; (b) a predictive queuing network model to support the analysis and planning phases of  ASM; and (c) optimization models to support the planning phase of ASM. In essence, ASM is an integrated decision support system for smart manufacturing that combines models of different nature  in a seamless manner. As shown here, these models can be used to predict manufacturing time and the energy consumed by the manufacturing process, as well as finding the machine settings that minimize the energy consumed or the manufacturing time subject to a variety of constraints using non-linear optimizaiton models. The diversity of models used affords different levels of integration and granularity in the decision making process. An example of a car manufacturing process is used throughout the paper to explain the concepts and models introduced here.}
+We consider steady-state production processes that produce a product and have feasibility constraints and metrics of cost and throughput that are stochastic functions of process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying deterministic feasibility constraints and stochastic steady state demand for the output product with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. We demonstrate the proposed  algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining, and conduct an experimental study that shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
+}
 \end{abstract}
 
-{\small Keywords: autonomic computing; smart manufacturing; queuing networks; optimization} % Keywords
+{\small Keywords: decision support;
+	decision guidance;
+	deterministic approximations;
+	stochastic simulation optimization;
+	heuristic algorithm } % Keywords
 
 \vspace{5pt} % Some vertical space between the abstract and first section
 
 \section{Introduction}
-Smart Manufacturing (SM) systems have to provide the capability for optimizing  manufacturing activities at the machine, unit or entire manufacturing facility level as well as adapting the manufacturing process on-the-fly as required by a variety of conditions (e.g., machine breakdowns and/or slowdowns) and unexpected variations in demands.  The process of making manufacturing more efficient has to be efficient itself.
 
-In the past few years, there has been significant technological advancements in different areas of process interactions. Some of these areas include product manufacturing, supply chain, and assembly lines. In some of these process interactions, there is a notion of a physical or virtual inventory that is used to store the intermediate products or materials or the data associated with them as the final product is being produced. Also, over time, these products change their state of production or completion. Hence, at certain time intervals, raw materials move from one machine to another to add or remove parts or modify their characteristics. We call such problems Buffered Temporal Flow Process (BTFP)~\cite{IJOC}. Such problems can be found in many different areas of manufacturing and supply chain process interactions. One such area is that of discrete manufacturing in which output items are produced from input items. The BTFP formalism presented in this paper can be used to model problems that deal with inventories and whose state varies at discrete time intervals.
+%Motivation
+This paper considers steady-state production processes that produce a product and have feasibility constraints and metrics of cost and throughput that are stochastic functions of process controls. 
+We are concerned with the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying deterministic feasibility constraints and stochastic steady state demand for the output product with a given high probability.
+These problems are prevalent in manufacturing processes, such as machining, assembly lines, and supply chain management.
+There is an increasing need for process analysis and optimization to solve this problem efficiently as companies want to be competitive and need to reduce their cost and improve efficiency of operations in the face of increased global competition. 
+
+%Solving this problem efficiently would allow a process engineer to perform a variety of analysis on a stochastic production systems such as (a) given foretasted increase in the demand of a product, how to set up the controls of every operational machine as to minimize the cost, or if the demand makes the problem infeasible, then make appropriate purchasing decisions for faster machines, and
+%(b) given the system design, how to set up the controls of every operational machine, as to make a trade-off between optimizing overall production cost versus carbon emissions, while satisfying the demand, and within a limitation on the capacity of all the system components.
+
+%Research Gap
+%Current state of the art and its limitations (funnel)
+%%high level 
+%Simulation based approaches
+Stochastic optimization have typically been performed using simulation-based optimization techniques (see \cite{Amaran2016} and \cite{Nguyen2014} for a review of such techniques). 
+Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica \cite{elmqvist1998modelica,Provan2012modelica} allow users to run stochastic simulations on models of complex systems in mechanical, hydraulic, thermal, control, and electrical power.
+Tools like OMOptim \cite{OMOptim}, Efficient Traceable Model-Based Dynamic Optimization (EDOp) \cite{EDOp}, and jMetal \cite{jMetal} use simulation models to heuristically-guide a trial and error search for the optimal answer. 
+However, the general limitation of simulation-based approaches is that simulation is used as a black box, and the underlying mathematical structure is not utilized. 
+
+
+%NP
+
+From the work on Mathematical Programming (MP), we know that, for deterministic problems, utilizing the mathematical structure can lead to significantly better results in terms of optimality of results and computational complexity compared to simulation-based approaches (see e.g., \cite{Amaran2016} and \cite{Klemmt2009}). 
+For this reason, a number of approaches have been developed to bridge the gap between stochastic simulation and MP.
+%key things that they do
+For instance, \cite{thompson_integrated_1990} propose an integrated approach that combines simulation with MP where the MP problem is constructed from the original stochastic problem with uncertainties being resolved to their mean values by using a sample of black-box simulations. This strategy of extracting an MP from the original problem is also used by \cite{paraskevopoulos_robust_1991} to solve the optimal capacity planning problem by incorporating the original objective function augmented with a penalty on the sensitivity of the objective function to various types of uncertainty.
+The authors of \cite{Xu2014MultiFid} propose an ordinal transformation framework, 
+consisting of a two-stage optimization framework that first extracts a low fidelity model using simulation or a queuing network model using assumptions that simplify the original problem and then uses this model to reduce the search space over which high fidelity simulations are run to find the optimal solution to the original problem.
+%This low fidelity model is in a closed mathematical form and solving this model reduces the search space. High fidelity simulations  are then used on this smaller search space to find the optimal solutions to the original problem.
+Other stochastic optimization approaches in the literature try to extract the mathematical structure of the original problem using similar techniques; more details are provided in section \ref{sec:LitRev}.
+However, extraction of the mathematical structure through sampling using a black-box simulation is computationally expensive, especially for real-world production processes composed of complex process networks.
+
+%NP
+Instead of extracting the mathematical structure using black-box simulation, in \cite{Krishnamoorthy2015}, we used the extraction of mathematical structure from a white-box simulation code analysis as part of a heuristic algorithm to solve a stochastic optimization problem of finding controls for temporal production processes with inventories as to minimize the total cost while satisfying the stochastic demand with a predefined probability.
+Similar to the  previous approaches, the mathematical structure was used for approximating a candidate set of solutions by solving a series of deterministic MP problems that approximate the stochastic simulation. 
+However, the class of problems considered in \cite{Krishnamoorthy2015} is limited to processes described using piece-wise linear arithmetic. 
+Whereas, many production processes, particularly in manufacturing, have models based on physics-based equations with non-linear arithmetic. 
+This paper tries to close the gap for stochastic optimization problems for steady-state production processes described using non-linear arithmetic.
+
+%Key contibutions
+More specifically, the contributions of this paper are three-fold:
+First, we propose a heuristic algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the problem of finding production process controls that minimize the expectation of cost while satisfying the deterministic process feasibility constraints and stochastic steady state demand for the output product with a given high probability. 
+The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods (e.g., see \cite{Chen2011}, \cite{Lee2012OCBACO}).  
+Second, we demonstrate the proposed algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining with models from the literature that use non-linear physics-based equations.
+Third, we conduct an initial experimental study using the heat-sink production process to compare the proposed algorithm with four popular simulation-based stochastic optimization algorithms viz., Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
+The experimental study demonstrates that SODA significantly outperforms the other algorithms in terms of optimality of results and computation time. In particular, 
+running over a 12-process problem using a 8-core server with 16GB RAM,
+in 40 minutes, SODA achieves a production  cost lower than that of competing algorithms by 61\%; in 16 hours SODA achieves 29\% better cost; and, in 3 days it achieves 7\% better cost.
+
+%Organization
+The rest of this paper is organized as follows. Section \ref{sec:prob} formally describes the stochastic optimization problem over steady-state production processes. SODA, including deterministic approximations, is presented in section \ref{sec:algo}. Section \ref{sec:expProbSetup} describes the model of a real world manufacturing use case of a heat-sink service network, which is used in the experimental study presented in section \ref{sec:expResults}. Key observations and extensions are discussed in section \ref{sec:Discussion}. Section \ref{sec:LitRev} further discusses related work. Finally, section \ref{sec:conclusion} concludes with some future research directions. 
+
+
+
+
+%%The domain challenges
+%Due to increased global demand, companies want to be competitive and look toward ways to reduce their cost and increase efficiency of operations. 
+%To address this, there is an increasing need for process analysis and optimization solutions, especially among companies that operate complex production systems. 
+%Examples of such systems include manufacturing processes, such as machining, assembly lines, and supply chain management.
+%These production systems are made up of processes that transform some input material to output product and they often involve controls that needs to set by the process operator.
+%In a real-world production system, the effects of these control settings may contain noise that makes the system stochastic.
+%Since, these settings influence the system's metrics of interest such as production cost, energy consumption, and carbon emissions as well as the state of the system's processes, the metrics and process state are also stochastic, and it is more difficult to evaluate the satisfiability of the constraints within these processes. 
+% Also, real-world production systems are typically composed of processes with continuous non-linear objectives.
+%Setting the control settings of the process is a difficult task because it needs to be done optimally i.e., the controls should be set such that some of the metrics are minimized or maximized while satisfying the capacity and demand constraints of the system. 
+
+
+%%The problem 
+%%%challenges
+%This task becomes even more difficult due to challenges in the real-world production system.
+%One such challenge is when the effects of the control settings contain noise that makes the system stochastic.
+%Since the effects of these settings influence the metrics of interest and the state of the system's processes, the metrics and process state are also stochastic, and it is more difficult to evaluate the satisfiability of the constraints within these processes. 
+%It is almost impossible to find exact solutions for such an optimization problem because of the inherent stochasticity present among these processes. 
+%Hence, there is a need to find an approximate solution to these problems efficiently and with fast rate of convergence.
+%Another challenge is that real-world production systems are typically composed of processes with continuous non-linear objectives.
+%Depending on the shape of the objective function, especially if non-convex or non-concave, there is a need for an optimization algorithm that will have to adapt to this function quickly in the stochastic setting. 
+%Finally, to support analysis and optimization of these complex real-world production systems, there is a need to accurately model machines, systems and processes so that they can provide accurate results in the stochastic environment.
+%These models need to capture (a) stochastic control variables; (b) metrics of machines (such as cost, energy consumption, and emission) as a function of these control variables; and (c) process routing that describes the flow of materials through the production system. 
+
+%%%why overcoming these challenges is important
+%To overcome these challenges, in this paper, we provide an efficient algorithm to solve the problem of optimizing a stochastic production system, that is, finding the control expectation setting for each process with non-linear objectives as to minimize the total cost of production subject to satisfying the production demand with a requested probability.
+%There is an urgent need to solve this problem efficiently as this would allow the process engineer to perform a variety of analysis and optimization tasks including what-if prediction and process optimization.
+%For example, as a prediction question, the process engineer may ask: what would be the production output as well as the overall system metrics such as cost, energy consumption and carbon emissions if one process is replaced with a faster process or if two processes do the task instead of just one?
+%Or, as an optimization question, a process engineer may ask: given the system design (which includes the flow of materials through the system), which machines should be on and off, and how to set up the controls of every operational machine, as to make a trade-off between optimizing overall production cost versus carbon emissions, while satisfying the demand, and within a limitation on the capacity of all the system components.
+
+
+%Optimization solvers and modeling languages based on MP and CP are often the technology of choice, when optimality and computational complexity are the priority.
+%Many classes of MP, such as linear programming (LP), mixed integer linear programming (MILP), and non-linear programming (NLP), have been very successful in solving real-world large-scale optimization problems. CP, on the other hand, has been broadly used for combinatorial optimization problems like scheduling and planning.  
+%To use these tools, one would have to use an algebraic modeling language such as A Modeling Language for Mathematical Programming (AMPL)
+%\cite{fourer2003ampl}, Optimization Programming Language (OPL) \cite{VanHentenryck:1999:OOP:299293}, General Algebraic Modeling System (GAMS) \cite{boisvert1985gams}, Gurobi \cite{gurobi}, or Advanced Interactive Multidimensional Modeling System (AIMMS) \cite{bisschop1993aimms}.  
+%However, not all real world problems, especially those that involve stochasticity, can be expressed and solved efficiently using these models/tools. 
+%Also, MP and CP present a significant challenge for engineers and business analysts. 
+%It requires an OR expert to model a problem and express it in an algebraic modeling language like the ones mentioned. 
+%Finally, these formal models are typically difficult to modify, extend, or reuse. This is comparable to ``spaghetti'' code versus an object-oriented approach.
+
+%%funnel low
+%Prior work in this area have tried to overcome some of the limitations described above.
+%For instance, the authors of \cite{Xu2014MultiFid} propose an ordinal transformation framework, which is a two stage optimization framework where a low fidelity model is built from the original problem, which is an abstraction of the original problem. This model is used to find candidates that would solve the reduced problem. Then, high fidelity simulations are used on these candidates to refine the solutions. 
+%But this approach does not consider problems that are in closed analytical form with stochasticity. For such problems, creating an abstraction of the original problem by dropping stochasticity allows us to use robust techniques such as deterministic approximation to find candidates with (near) optimal solutions. 
+%Also, this approach does not consider applications such as the production system where the flow of materials through the system is very complex and consists of a number of transformations taking place in parallel. Performing simulations on such applications may be cheap, but abstracting a low-fidelity model from such as system could be expensive and may not produce good candidates.
+%In \cite{Krishnamoorthy2015}, we proposed an efficient heuristic algorithm for processes that involved inventories and where the state of the processes and inventories changed at each time point over the time horizon. 
+%This algorithm was based on producing a set of high quality candidate machine settings based on deterministic approximations and then refining the solutions by running stochastic simulations on them to find the best machine setting from the candidate set. 
+%One main difference between our previous work and the work presented in this paper is that this paper considers the process to be in steady state and does not involve inventories.
+%Also, our previous work did not consider the real-world productions systems composed of complex processes with non-linear objectives, rather the processes there had piecewise linear objectives. 
+%Overcoming these limitations is exactly the focus of this paper.
 
-Manufacturing companies are always looking for opportunities to reduce costs at the manufacturing floor. Limits on cost reduction on the material, labor and maintenance costs makes manufacturing companies look toward other venues to reduce costs such as energy consumption, emissions, water consumption and waste disposal. This has resulted in a greater need for research in techniques to optimize the operations of the manufacturing floor while taking into account sustainability metrics. Government and environmental agencies are also enacting tougher laws and regulations to induce companies to take the sustainable manufacturing route. In addition, customers have become more aware of the looming dangers to the environment. This has resulted in increased customer demand for greener products.
 
-At the same time, manufacturing floors are becoming more complex, more dynamic, and more automated. There is then a need for turning manufacturing floors into self-managed operations so that their performance can be continuously and automatically optimized as conditions change (e.g., machines break down, the  demand for products change). In this paper, we adapt the well known Autonomic Computing paradigm~\cite{ACVision} developed for complex computer systems to smart manufacturing, resulting in  Autonomic Smart Manufacturing (ASM). In particular, we adopt the MAPE-K (Monitor, Analyze, Plan, and Execute based on Knowledge) model~\cite{ACVision}
-of autonomic computing to ASM. We explain the approach  with the help of examples that show how different  kinds of models can support autonomic smart manufacturing. 
 
-%%% New text added by Danny in response to reviewer 1
-This paper shows that the MAPE-K framework can be used to turn smart manufacturing into an integrated decision support system that enables decision makers, such as production engineers, to express queries and goals for a variety of metrics  while the ASM infrastructure constantly steers the manufacturing floor towards optimality by dynamically reacting to a variety of conditions. Examples of queries include ``What is the throughout and processing time of the 
-manufacturing floor for a given setting of the machines?'' or ``What is the energy consumed by the manufacturing floor to produce a given number of parts/minute?'' A production engineer may, for example, set goals on energy consumption, processing time, and processing throughput. An autonomic manufacturing floor will constantly optimize the settings of various parameters, such as machine speeds, in order to meet the goals. 
-
-Manufacturing Execution Systems (MES) provide control, management and information about the manufacturing floor. It provides real-time reporting of actual manufacturing operations with performance results such as resource utilization, resource availability and cycle-time. If limits are exceeded, this is reported, and the person responsible for the process can view the event types in order to take corresponding measures~\cite{Meyer2009}\cite{Dhandapani2006}\cite{McClellan1997}. Although MES provide good monitoring and reporting tools, our approach allows for not only setting  control variables, but also adjusting these variables autonomically. Thus, the model knowledge is used to minimize human intervention in the analysis, planning and execution phases of ASM. 
-
-%%% New text by Mohan
-Modeling and analysis of BTFP-like systems can be performed using customized domain-specific solutions. These solutions are designed for specific, limited setting of a manufacturing process, and would typically provide a graphical user interface that is easy to use by  end users.Examples include \cite{Sharif2013} and \cite{Raska2012}. However, while these solutions may be both efficient (in terms of optimality of results and computational time), they are (1) typically not extensible to additional aspects of machines, processes and metrics; and (2) perform a ``silo" optimization, which would not achieve the system-wide optimum if an extended underlying system needs to be optimized. 
-Simulation-based systems have also been proposed that allow users to accurately model a system and its inner workings. These systems tend to be object-oriented, modular, extensible, reusable, and provide an easy-to-use graphical user interface. Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica-based ones \cite{elmqvist1998modelica} like JModelica \cite{aakesson2009jmodelica}, Dymola \cite{bruck2002dymola}, and MapleSim \cite{hvrebivcek2008modelling} allow users to model complex systems in mechanical, hydraulic, thermal, control, and electrical power. However, simulation-based optimization is significantly inferior to optimization solutions based on mathematical programming (MP)/constraint programming (CP) in terms of optimality of results and computational complexity for problems that can be expressed using MP/CP models. This is because simulation-based optimization amounts to a heuristically-guided trial and error search, which does not utilize the mathematical structure of the underlying problem the way MP/CP methods do. Optimization solvers and modeling languages based on MP and CP are often the technology of choice, when optimality and computational complexity are the priority. To use them, one would have to use an algebraic modeling language such as A Modeling Language for Mathematical Programming (AMPL)
-\cite{fourer2003ampl}, Optimization Programming Language (OPL) \cite{VanHentenryck:1999:OOP:299293}, or General Algebraic Modeling System (GAMS) \cite{boisvert1985gams}.  However, MP and CP modeling present a significant challenge for engineers and business analysts to model. These techniques typically require an OR expert to model a problem and express it in an algebraic modeling language like the ones mentioned. Additionally, these formal models are typically difficult to modify, extend, or reuse. Finally, \cite{Giaglis2001} proposes an evaluation framework and a novel taxonomy of business process modeling (BPM) and information systems modeling (ISM) to assist decision makers in comparatively evaluating and selecting suitable modeling techniques. Although these models provide a generic framework for solving a large category of problems, they fail to provide (a) a uniform and reusable modeling framework, where the same model can be used for composition, computation, prediction and optimization tasks; (b) a dynamic model that can be used in all the phases of ASM; and (c) a simple and easy to use analytics that can respond to changing environment of the manufacturing floor.
-%%% end of new text by Mohan.
-
-%RelatedWork for Research Gap
-The optimization of composed BTFP processes over a time horizon was recently considered in~\cite{IJOC}, which reduced the problem to a  MILP formulation. However, in many manufacturing cases, it is sufficient to consider a steady-state optimization. In these cases, queuing theory based approaches are considerably more efficient computationally, as compared to approaches based on mathematical programming. Manufacturing systems have been extensively modeled with queuing theory. S. Yaghoubi et al. propose a queuing network for a finite capacity multi-class multi-stage assembly system with only one server in each service station~\cite{Yaghoubi2013}. Another approach is the optimization of the supply chain by modeling it  as an analytical queuing network~\cite{Kerbache2004}. The authors in~\cite{Wu2014} explore single and batch job arrivals and model a manufacturing process with the capability for serial or parallel batch processing. In addition, intelligent agents have also been used to do dynamic scheduling and load balancing in manufacturing systems. For instance,~\cite{Nadoli1993}\cite{Balic2007} uses the concept of intelligent agents to simulate the manufacturing process so that the information returned could be used to balance the processes on the floor.  All these approaches either model the manufacturing process as a simple mechanism with inventory that helps produce multiple classes of products or the mathematical formulation of the model is too complicated to be used in a dynamic environment. It is required that the process model can capture all the characteristics of any discreet manufacturing floor and that the mathematical representation of the model can be solved quickly and with ease so that the different phases of ASM can respond to the changing environment of the manufacturing floor. This is exactly the focus of this paper.
-
-The main contributions of this paper are: (1) a framework for autonomic smart manufacturing that relies on a variety of models for its support; (2) a process model to represent machines, part inventories, and the flow of parts through
-machines in a discrete manufacturing floor; (3) a predictive queuing network model to support the analysis and planning phases of ASM; and (4) optimization models to support the plan phase of ASM. The diversity of models used affords different levels of integration and granularity in the decision making process.
-
-
-The rest of this paper is organized as follows. Section~\ref{sec:ASM} introduces the framework of autonomic smart manufacturing. The following section describes three models used to support autonomic smart manufacturing: process models, predictive queuing models, and optimization models. These models are illustrated by an example of a car manufacturing floor. The models presented here allows for prediction and optimization of manufacturing time and energy consumed among other metrics. Section~\ref{sec:relwork} discusses work related to this paper. Finally, Section~\ref{sec:conc} presents some concluding remarks.
-
-\section{Autonomic Smart Manufacturing}
-\label{sec:ASM}
-
-The term Autonomic Computing (AC) was first coined by IBM when its Senior Research Vice-President Paul Horn stated that ``... the  main obstacle to further progress in IT is a looming complexity crisis'' at a keynote to the National Academy of Engineers in 2001.  Complex software systems have tens of millions of lines of code, require skilled IT professionals to install, configure, tune, and maintain.  Because organizations run many different large complex software systems, there is a need for integration of heterogeneous systems. Moreover, the workload submitted to these complex systems varies dynamically in nature (different types of requests) and intensity (low to high transaction arrival rates) in unpredictable ways. All of these considerations imply that it is no longer feasible for human beings to control the myriad of configurable parameters that would make a complex system operate at its best at any point in time. Therefore, computers are needed to make complex systems self-managing, which implies that complex computer systems should be self-configuring and self-optimizing. 
-
- {\bf [Figure 1 near here]}
-
-A well-known framework to guide the design of autonomic computer systems is IBM's MAPE-K model, which stands for {\bf M}onitor, {\bf A}nalyze, {\bf P}lan, and {\bf E}xecute based on {\bf K}nowledge. In this paper we make the case that complex Smart Manufacturing systems could benefit from the MAPE-K framework. We use Figure~\ref{fig:AC} to explain the details of the MAPE-K model as it applies to Smart Manufacturing. We call it Autonomic Smart Manufacturing (ASM). ASM as defined here is broader in scope than Manufacturing Execution Systems (MES), which control and manage the manufacturing floor and interact with ERP systems at the top and invididual machine and automation control at the bottom. 
-
-%{\bf Need to say how ASM maps to Management Execution Systems. I was able to find some vendor lierature on it. Alex will get some material from NIST}
-
-The {\em monitor\/} phase of the MAPE-K loop is used to collect information through sensors, in an automated or semi-automated way, on individual machines as well as on the entire environment. Examples of data collected by sensors include speed and acceleration of specific machines, pressure applied to specific materials, density of input materials, CO$_2$ emissions (which can be measured or computed from other metrics), amount of water used, temperature in the manufacturing floor, and energy consumed. Data collected by a variety of sensors is input into a Sensor Data Repository.  The monitoring phase is also used for preprocessing, cleaning, filtering and aggregating the raw data stored in the Sensor Data Repository. 
-
-The {\em analyze\/} phase of the MAPE-K loop is used for analytics, what-if predictions, parameter calibration, and diagnostics.  Analytics is used to infer unknown relationships among data using data mining, statistical learning, and machine learning techniques for example.  A production engineer may want to learn a functional relationship between energy consumed and the throughput of the manufacturing process (in parts produced per hour). What-if predictions can be made based on relationships inferred through the analytics process.  The production engineer may want to know what will be the increase in energy consumed if the manufacturing process throughput is increased by 15\%.
- Diagnostics is the process of detecting faults (i.e., any deviation from what is considered to be normal behavior) in the manufacturing process so that the best corrective actions can be determined (in the plan phase) and performed (in the execute phase).  Examples of faults include breakdown of a machine, a machine operating at substandard performance in terms of speed or quality of parts produced, or excessive total CO$_2$ emissions. Production engineers may ask questions (i.e., computable queries) whose answers can be obtained from the data made available in the analysis phase to determine how individual components are performing or how the manufacturing process as a whole is evolving.
-
-The {\em plan\/} phase uses the results of the analysis phase  to plan the optimal actions necessary for prognostics, i.e., to fix faults or to improve the efficiency of the manufacturing process as a whole.  The plan phase requires the availability of models that represent, at the desired granularity level, the behavior of individual components and of the manufacturing process as a whole.  An example of a component-level model is a functional relationship between the energy consumed by a specific machine and the speed at which it produces parts.  At the process level, a typical model would capture the flows of physical and information elements through the manufacturing process as well as the attributes of its components and flows. The models used by the plan phase need to support the descriptive, predictive and prescriptive analytical tasks, including optimization, sensitivity analyses, and answering what-if questions based on predictive models and not on data analysis. A variety of modeling approaches (e.g., deterministic and stochastic optimization, simulation, and queuing theory) may be used to determine action plans including optimal production schedules, optimal machine and process configurations and optimal process parameter settings. A plan may result for example in the following actions: stop machine A, and start machines B and C at 10,000 RPM.  This action plan is passed on to the {\em execute\/} phase, which determines how to carry out the plan by looking up a database of domain-specific interface commands for the specific components involved (e.g., determining the command that should be sent to machine B to start it at 10,000 RPM).
-
-Therefore, ASM is an integrated decision support framework for smart manufacturing that is based on a variety of models including process models, performance models, and optimization models, as exemplified in the next section.
-
-
-\section{Models for ASM} \label{sec:models}
-
-Figure~\ref{fig:AC} also illustrates that a production engineer decides on the relevant metrics and their desired values so that the autonomic controller is capable of continuously going through the MAPE-K loop to maintain the industrial process operating at its best. A knowledge base (the K in MAPE-K) stores information about components, process models, optimization and predictive models. This section describes these three types of models and provides an example used throughout the paper to illustrate the usefulness of these models.
-
-{\bf [Figure 2 near here]}
-
-\subsection{Process Models for ASM} \label{sec:proc}
-
-Figure~\ref{fig:Tesla} shows a simplified diagram for a process model for the first phase of a car manufacturing process. The diagram shows machines, represented by rectangles, and part buffers (aka inventories)  connecting
-the machines. These buffers are used to store parts produced by one machine whilewaiting for the next machine in the sequence to be available to process that part. Aluminum coils are fed as input into the manufacturing floor and are sent to two uncoiling machines that work in parallel to uncoil the aluminum coils they receive. The flattened aluminum plates are sent to four different cutting machines: for the left side of the car, for the underbody, for the front, and for the right side of the car. After being cut, the aluminum plates are sent to die press machines for each of the four sides (left, side, front, and underbody). The front and underbody plates require additional processing by die press machines.
-
-
-\subsection{Predictive Queuing Models} \label{sec:pred}
-
-This section presents models that can be used in the analysis phase of the MAPE-K loop as it applies to ASM. These models can be used to answer a variety of ``what-if'' questions.
-
-The process model of Figure~\ref{fig:Tesla} shows that each machine performs some processing on each part stored in the inventory of parts waiting for the machine. Each machine has a processing time, which is a function of its settings and of the physical characteristics (e.g., density) of the part to be processed. These characteristics of the process model allow it to be modeled using a queuing network (QN) model~\cite{MAD2004}. A QN is a network of queues where the output of a queue feeds the input of another queue. Each queue consists of a machine, which has a finite speed for processing its input parts, and an input inventory of parts waiting to be processed. QN models allow one to predict the value of a series of  performance metrics of the manufacturing floor as a function of a series of parameters. Examples of metrics of interest include: average manufacturing time (in hours), throughput (in cars/hour),
-total energy consumed (in GJoules/car).
-
-{\bf [Figure 3 near here]}
-
-Figure~\ref{fig:TeslaQN} shows the diagram for the QN that corresponds to the process model of Figure~\ref{fig:Tesla}. Following the diagramatic convention used in queueing theory, the processing component of a queue (the machine in our case) is represented by a circle and the waiting line (the inventory of parts waiting to be processed in our example) is represented by a rectangle in front of the circle. The QNs considered here represent systems in steady state. We also assume that operational assumptions such as operational equilibrium, homogeneous arrivals, and homogeneous service times~\cite{buzen} are met.
-
-The QN of Figure~\ref{fig:TeslaQN} has branches in which the flow of parts branches and then joins. This is called a fork-and-join (FJ) construct. While there are well known solutions for QNs without FJ constructs (see e.g.,~\cite{MAD2004}), there are no exact solutions for QNs with FJ constructs. However, Firas and Menasc\'e have presented a very accurate approximation for the time spent in a FJ construct~\cite{AlomariMenasce}. That approximation was extensively validated through simulation and  covers the general cases of multiclass open and closed queuing networks with fork branches with non-homogeneous passage times as well as probabilistic forks.
-Consider that a FJ construct has $M$ branches ($m = 1, \cdots, M$).  Let the time spent in branch $m$ be $T_m$. Then, we renumber the branches as $v (1), v(2), \cdots, v (M)$ such that $T_{v (1)} \geq T_{v (2)} \geq \cdots \geq T_{v (M)}$. Then, according to the  approximation in~\cite{AlomariMenasce}, the time $T_{FJ}$ spent in an FJ construct is given by 
-\begin{equation}
-T_{FJ} = \sum_{m=1}^M \frac{1}{m} \times T_{v(m)} \label{eq:FJ}.
-\end{equation}
-For example, assume that a FJ construct has three branches ($M = 3$) and that the average execution times of each of the 
-branches are $T_1 = 2, T_2 = 4$,  and $T_3 = 3$. Then, $T_{FJ} = (1/1) T_2 + (1/2)  T_3 + (1/3) T_1 =
-4 + 1.5 + 2/3 = 6.17$.
-
-
-According to well known results of queuing theory (e.g.,~\cite{MAD2004}), the average time $T_i$ spent at  queue $i$ with average service time $S_i$ is given by
-\begin{equation}
-T_i = \frac{S_i}{1 - \lambda S_i} \label{eq:ti}
-\end{equation}
- where $\lambda$ is the average arrival rate of requests (e.g., car manufacturing requests in our example) to the manufacturing floor. Note that $\lambda  S_i$ is the utilization of machine $i$. Therefore, combining these results with the FJ approximation of equation~(\ref{eq:FJ}), we can derive the average time $T_{\rm man}$ to execute phase 1 of manufacturing the car as 
- \begin{equation}
-T_{\rm man} = T_{\rm uncoil} + T_{\rm cut-press}
-\end{equation}
-where
-\begin{equation}
-T_{\rm uncoil} = \frac{S_{\rm uncoil}}{1 - \lambda . S_{\rm uncoil}} + 1/2 \frac{S_{\rm uncoil}}{1 - \lambda . S_{\rm uncoil}}. \label{eq:Tuncoil}
-\end{equation}
-Equation~(\ref{eq:Tuncoil}) uses equations~(\ref{eq:FJ})-(\ref{eq:ti}) and assumes that both uncoiling machines have the same speed $S_{\rm uncoil}$. In order to compute $T_{\rm cut-press}$ we need to use the FJ approximation of 
-equation~(\ref{eq:FJ}) again. But first, we need to compute  the time spent in each branch (left, under, front, and right)  as follows. 
-\begin{eqnarray}
-T_{\rm left} &=& \frac{S_{\rm left-cut}}{1 - \lambda . S_{\rm left-cut}} + \frac{S_{\rm die-press1}}{1 - \lambda . S_{\rm die-press1}} \nonumber \\
-T_{\rm under} &=&  \frac{S_{\rm under-cut}}{1 - \lambda . S_{\rm under-cut}} +
-                                 \frac{S_{\rm die-press2}}{1 - \lambda . S_{\rm die-press2}} + \nonumber \\
-                       &&    \frac{S_{\rm die-press5}}{1 - \lambda . S_{\rm die-press5}} +
-                                 \frac{S_{\rm die-press7}}{1 - \lambda . S_{\rm die-press7}} \nonumber \\
-T_{\rm front} &=&  \frac{S_{\rm front-cut}}{1 - \lambda . S_{\rm front-cut}} +
-                                 \frac{S_{\rm die-press3}}{1 - \lambda . S_{\rm die-press3}} + \nonumber \\
-                       &&    \frac{S_{\rm die-press6}}{1 - \lambda . S_{\rm die-press6}}  \nonumber \\
-T_{\rm right} &=& \frac{S_{\rm right-cut}}{1 - \lambda . S_{\rm right-cut}} + \frac{S_{\rm die-press4}}{1 - \lambda . S_{\rm die-press4}}   \label{eq:branches}                 
-\end{eqnarray}
-We can now write down $T_{\rm cut-press}$ as
-\begin{equation}
-T_{\rm cut-press} = \sum_{k=1}^4 \frac{1}{k} \times  \frac{T_{v (k)}}{1 - \lambda . T_{v (k)}}
-     \label{eq:tcut-press}
-\end{equation}
-where $T_{v (k)} \in \{T_{\rm left}, T_{\rm under}, T_{\rm front}, T_{\rm right}\}$ and $v (1), v(2), \cdots, v (4)$ are numbered such that $T_{v (1)} \geq T_{v (2)} \geq \cdots \geq T_{v (4)}$.
-
-The QN formulation shown above considers a single product being processed at the manufacturing floor. However, in many real cases, the same manufacturing floor may be shared by several products (e.g., different 
-models of the same car). This can be easily modeled by using multi-class queuing network models~\cite{MAD2004}. The FJ approximation used above~\cite{AlomariMenasce} is also valid for multiclass QN models.
-
-Table~\ref{tab:paramQN} shows an example of the parameters for phase 1 of the process model of Figure~\ref{fig:Tesla}. The first column indicates all machines involved. The second column lists the service times, $S_i$, for each machine. The next column lists the utilization $\rho_i = \lambda S_i$ of each machine assuming a value of $\lambda$ equal to 3 cars/hr. Column 4 shows the average processing time $T_i$ of a part at machine $i$. This time is the sum of the service time $S_i$ plus the average time spent by a part in the inventory before it is acted upon by the machine (i.e., the average waiting time). As indicated in equation(\ref{eq:ti}), this is computed as $T_i = S_i / (1 - \rho_i)$.
-
-The next three columns deal with power consumption. Each machine consumes some static power $P^i_{\rm stat}$ (column 5) even when it is idle (powered up but waiting for a part to become available in its input inventory) and some dynamic power $P^i_{\rm dyn}$ (column 6) when it is in operation (i.e., executing an operation). The dynamic power increases as the average service time decreases because a smaller service time may be due to a  machine rotating at a higher speed or employing higher temperature and/or force to perform its operation. In general, we can write $P^i_{\rm dyn}$ as a function of $S_i$. An example of such function is a power law function such as:
-\begin{equation}
-P_i^{\rm dyn}  (S_i) = \alpha_i . S_i^{-\beta_i}   ~~~\alpha_i > 0, \beta_i > 1.  \label{eq:pdyn}
-\end{equation}
-The average power consumption $P_i^{\rm avg}$ (column 7) can be computed as
-\begin{equation}
-P_i^{\rm avg} (S_i) = (1 - \rho_i). P_i^{\rm stat} + \rho_i . P_i^{\rm dyn} (S_i)
-\end{equation}
-because when the machine is idle (this happens $(1 - \rho_i)$ of the time) the power consumption is $P_i^{\rm stat}$ and when the machine is operational (this happens $\rho_i$ of the time) the power consumption is $P_i^{\rm dyn}$.
-Finally, column 8 shows the the total energy $E_i$ consumed per machine per car. This number is obtained as 
-\begin{equation}
-E_i (S_i) = P_i^{\rm avg} (S_i) \times T_i (S_i) \times 60 /1,000,000
-\end{equation}
-because the time it takes each part to flow through machine $i$ is  $T_i$ minutes. During that time, the average power consumption of the machine is $P_i^{\rm avg}$ KJoules/sec. The factor 60 is used to convert minutes into seconds and the whole expression is divided by 1,000,000 so that the resulting value of $E$ is given in GJoules. Note that the energy consumed by a machine, its average power, and its processing time are all a function of its service time $S_i$. If we add all the values in the last column we obtain the total energy $E = \sum_{i=1}^K E_i (S_i)$ consumed per car  for phase 1 of a car manufacturing. This value is 0.7 GJ.
-
-{\bf [Table 1 near here]}
-
-We can now use the formulas in equations~(\ref{eq:Tuncoil})-(\ref{eq:branches}) along with the values in Table~\ref{tab:paramQN} to compute the average time spent performing uncoiling and cutting and die pressing in each of the four branches. The results are $T_{\rm uncoil} = 7.5$ min, $T_{\rm left} = 40$ min, $T_{\rm under} = 86.7$ min,  $T_{\rm front} =  57.1$ min, and $T_{\rm right} =  40$ min.
-
-In order to compute $T_{\rm cut-press}$ according to equation~(\ref{eq:tcut-press}), we need to sort the processing times of the four branches of the cut and die press phase in decreasing order. According to the values above, we get $T_{v(1)} = T_{\rm under}$, $T_{v(2)} = T_{\rm front}$, $T_{v(3)} = T_{\rm left}$, and $T_{v(4)} = T_{\rm right}$. Thus,
-\begin{equation}
-T_{\rm cut-press} = T_{\rm under} + \frac{1}{2} T_{\rm front} + \frac{1}{3}  T_{\rm left} +
-                                   \frac{1}{4} T_{\rm right}  \\ \nonumber
-                              =  138.6 ~{\rm min}.
-\end{equation}
-If we add $T_{\rm uncoil}$ to $T_{\rm cut-press}$ we get 146.1 min, which is the total time to complete phase 1 of the car manufacturing process.
-
-{\bf [Figure 4 near here]}
-
-Figure~\ref{fig:comptime-energy} has two y-axes. The left one represents the completion time in minutes for phase 1 of the car manufacturing and the right axis represents the energy consumed in GJoules per car for phase 1. These values are a function of the car throughpt $\lambda$ measured in cars/hour and  represented in the x-axis. For all numerical examples used in this paper we considered $\beta_i = 2$ for all machines. That graph  shows, for example,  that if we wanted to limit energy consumption per car to  0.78 GJoules, the maximum throughput of the manufacturing floor should not exceed 3.6 cars/hour.
-
-
-The model discussed above allows one to answer several interesting what-if questions in the analysis phase of the MAPE-K loop. Some examples include: 
-\begin{itemize}
-\item Your production engineer is proposing to increase the throughput of the manufacturing floor by 40\%. That means that $\lambda$ would increase from 3 cars/hour to 4.2 cars/hour. You then want to answer the question: What is the total time to complete phase 1 of the manufacturing process and what is the total energy consumed per car under the new thoughput? Using the model described above we get that the total time for phase 1 is 859 minutes, a 5.9-fold increase in the total time, and the total energy consumed per car is 1.3  GJoules, a 1.9-fold increase in energy consumption. The reason for the significant increase in the total time is that the underbody cutting machine is the bottleneck of the manufacturing process. When $\lambda$ is equal to 3 cars/hour, the utilization of this machine is 70\%, the highest among all machines (see Table~\ref{tab:paramQN}).  But, when $\lambda$ goes up to 4.2 cars/sec, the utilization of this machine goes to 98\%.
-
-\item What is the maximum throughput you can obtain from your manufacturing floor? Because the utilization $\rho_i$ of each machine cannot exceed 100\%, the maximum throughput cannot exceed $1 / S_i$ for all machines. So, the machine with largest service time value will constraint the maximum throughput. Thus, $\lambda < 1 / ({\max_{i=1}^K S_i})$. For the example of Table~\ref{tab:paramQN}, the maximum throughput  is $1 / 14  \times 60 = 4.29$ cars/hour.
-
-\item You decide that you have enough demand to increase your throughput to 4.2 cars/hour. You are considering to invest in a more modern and faster underbody cutting machine. The service time for the new machine is 10 minutes. With this machine, the total time to complete phase 1 of the manufacturing process is 204 minutes (24\% of the time spent with the original machine) and the total energy consumed is 0.66 GJoules (50\% of the energy consumed with the original machine). The reason for the decrease in energy concumption is that even though the faster underbody cutting  machine consumes more dynamic power, its utilization goes down from 98\% to 70\% and its average processing time goes down from 700 minutes to 33 minutes. This signifcantly reduces the energy consumed by this machine. Consider on the other hand, that we decide to replace the uncoiling machines by machines four times faster, while still keeping the original underbody cutting machine. The total energy now goes up to 1.34 GJ from 1.3 GJ. In the previous case, the energy consumption decreased because we made a high utilization machine faster. In the case of the uncoiling machines,  we are making a low utilization machine faster so the energy consumed increases. The reason is that on the one hand, a decrease in the service time of a machine increases its dynamic power  (see equation~(\ref{eq:pdyn})), which increases its energy consumption. But,  at the same time, a decrease its processing time reduces the energy consumption. So, depending on which particular effect dominates, it is more or less advantageous to replace a machine by a faster one. 
-
-\end{itemize}
-
-
-
-
-\subsection{Optimization Models} \label{sec:opt}
-
-The plan phase of the MAPE-K loop for ASM requires models that can change the configuration of the manufacturing floor to make it operate in an optimal or near optimal way as conditions change. This requires the use of optimization
-models such as the ones discussed in this section. These models are based on the predictive analysis models discussed in the previous section.
-
-%%% New text provided by Alex
-The queuing and energy model discussed above can be used as the basis for solving a range of optimization problems of the form described below. The decision variables are service times $S_1, \cdots, S_K$ of the machines on the manufacturing floor. The key performance indicators are the completion time $T = T (S_1, \cdots, S_K)$ and the total energy consumption $E = E (S_1, \cdots, S_K)$, which are both functions of $S_1, \cdots, S_K$.
-
-It is important to note that the service time decision variables $S_1, \cdots, S_K$  can serve as a proxy for machine control settings. For example, for a turning machine, it is easy to preprocess a function that would associate the service time to process a part with the optimal control setting of (1) depth of cut, (2) feed rate, and (3) spindle  speed. 
-
-A decision maker,  typically  a manufacturing process engineer, would be able to formulate general optimization problems of the form:
-
-\makebox{}\\
-Minimize Objective $(T,E)$\\
-s.t.   Constraints $(T,E)$\\
-$~~~~~~~U_i (S_i) < 1 ~~\forall ~i$ \\
-$~~~~~~~S_i \geq S_{\rm min} ~~~\forall ~i$
-
-\makebox{}\\
-where Objective $(T,E)$ is an expression that may involve the completion time $T$ and the total energy consumption $E$, and so, in turn, is a function of $S_1, \cdots, S_K$, and Constraints $(T, E)$ is a set of  inequalities involving $T$ and $E$. Below are a couple of examples of problems of this form:
-\begin{itemize}
-\item Objective $(T,E) = T$ and Constraints $(T,E) = \{E \leq E_{\rm max}\}$. This problem  minimizes the completion time within the total bound of energy consumption.
-
-\item  Objective $(T,E) = E$ and Constraints $(T,E) = \{T \leq T_{\rm max}\}$. The goal here is to minimize the energy consumption within the total bound on completion time.
-
-\item Objective $(T,E)  = 0.1  \times E +  {\rm  max} ~(0, 10.0 \times (T - T_{\rm max})) $   and Constraints $(T,E)$ = \{\}. This problem minimizes the total cost that consists of the energy cost, $0.1 \times E$,   plus a penalty on the excess over the maximum time delay  $T_{\rm max}$.
-\end{itemize}
-
-Furthermore, the optimization framework can be used to construct a Pareto-optimal frontier in the $(T,E)$ space. To do that, we can discretize the possible completion times, say $T_1, \cdots,T_n$, and for each such completion time $T_i$ solve the optimization problem where Objective $(T,E) = E$ and Constraints $(T,E) = (T \leq T_i)$. A graph with Pareto-optimal frontier can be useful to the decision maker to decide on the tradeoff between energy consumption and the completion time.
-
-
-%%% End of new text provided by Alex
-
-Due to the nature of the objective functions and constraints involved in the problems described above, we need to solve  continuous non-linear optimization problems.  Some examples of techniques for dealing with these problems
-include Sparse Nonlinear OPTimizer (SNOPT) \cite{Gill2002}, Interior Point OPTimizer (IPOPT) \cite{Biegler2009}, and WORHP \cite{wohrp2013}.
-
-%The queuing and energy model discussed above can be used as the basis for solving optimization problems such as ``Find the service times of all machines in order to minimize the total energy consumption subject to constraints such as (1) the utilization of any machine has to be less than 100\%, (2) the total completion time has to be less than some value $T_{\rm max}$, and (3) the service time at each machine can not be less than some value $S_{\rm min}$.
-
-%We can cast this optimization problem more formally as follows. The decision variables are $S_1, \cdots, S_K$, the total energy and the total completion time are a function of all decision variables. Thus, the  optimization problem is:
-
-%\makebox{}\\
-%Minimize $E (S_1, \cdots, S_K) = \sum_{i=1}^K E_i (S_i)$
-%s.t. $T (S_1, \cdots, S_K) \leq T_{\rm max}$\\
-%$~~~~~~~~~~~U_i (S_i) < 1 ~~\forall i$\\
-%$~~~~~~~~~~~S_i \geq S_{\rm min} ~~\forall i$.
-%\makebox{}\\
-
-
-We discuss now a numerical  example of a problem of the first type described above, i.e., minimize the total energy subject to a maximum completion time $T_{\rm max}$. We used the following values: $\lambda =3$ cars/hour, $T_{\rm max} = 120$ minutes, and $S_{\rm min} = 1$ minute and used the Generalized Reduced Gradient solver included with MS Excel. In a typical ASM environment, optimization solvers that can be invoked programmatically should be used. The results are given in Table~\ref{tab:opt}. The minimum energy consumed per car is 0.407 GJoules and the total car completion time in phase 1 is 32.2 minutes.
-
-{\bf [Table 2 near here]}
-
-The second problem referred above is an inverse problem to the one discussed above in that the goal is to  minimize the total car manufacturing time for phase 1 while keping the total energy consumed below a maximum value of $E_{\rm max}$:
-%\newpage
-
-%\makebox{}\\
-%Minimize $T (S_1, \cdots, S_K)$
-
-%s.t. $E (S_1, \cdots, S_K) = \sum_{i=1}^K E_i (S_i)  \leq  E_{\rm Max}$\\
-%$~~~~~~~~~~~U_i (S_i) < 1 ~~\forall i$\\
-%$~~~~~~~~~~~S_i \geq S_{\rm min} ~~\forall i$.
-%\makebox{}\\
-
-As an example, we solved this problem using $E_{\rm max}$ = 0.5 GJ. The minimum value of   $T (S_1, \cdots, S_K)$ is 13.1 minutes for the following values of service times: $S_{\rm uncoil} = 1.16$ min, $S_{\rm left-cut} = 2.31$ min,$S_{\rm under-cut} = 1.85$ min, $S_{\rm front-cut} = 1.95$ min, $S_{\rm right-cut} = 2.21$ min, $S_{\rm die-press1} = 1.66$ min, $S_{\rm die-press2} = 1.11$ min, $S_{\rm die-press3} = 1.63$ min, $S_{\rm die-press4} = 1.81$ min, $S_{\rm die-press5} = 1.35$ min, $S_{\rm die-press6} = 1.69$ min,  and $S_{\rm die-press7} = 1.06$ min.
-
-If we compare the solutions of the two problems, we see that by increasing the energy consumed by 23\% (from 0.407 GJ to 0.5 GJ), we are able to reduce the car manufacturing time to 41\% (from 32.2 minutes to 13.1 minutes) of its
-time under the previous setting of the machines.
-
-The above optimization problems are just two examples of what can be done to maintain the manufacturing floor operating at an optimal level, where the optimality criterion is defined by the production engineer.
-
-%% Danny added this subsection
-\subsection{Model Integration for Decision Support}
-
-The three models described in the previous subsections are examples of the type of models that would be part of the knowledge base of the MAPE-K framework for smart manufacturing. Other models could include statistical learning models and simulations models. These models provide an integrated and  seamless support for decision makers such as production engineers.
-
-For example, a decision maker may pose the question ``What is the maximum throughput (in parts/sec) of the manufacturing floor for the given setting of the machines and for a different setting that speeds up some of the machines?''
-This query would be answered through predictive performance models such as the one described in Section~\ref{sec:pred}. The decision maker could then ask the question ``What is the new processing time of a part if the manufacturing process is changed so that new machines are added in order to increase the level of parallelism in one of the manufacturing stages?'' Answering this query would entail  modifying the process model of Section~\ref{sec:proc} and using a predictive performance model such as the one in Section~\ref{sec:pred}.
-
-In other circumstances, the production engineer, may specify that the energy consumed be minimized  while maintaining the manufacturing time of a part below a certain threshold even when some machines experience degraded performance. Achieving this goal requires a continuous use of  the optimization models discussed in Section~\ref{sec:opt}, which require the predictive performance models of Section~\ref{sec:pred}.
-
-Therefore, the control loop provided by the MAPE-K framework provides for dynamic and integrated model-based decision making.
-
-
-
-\section{Related Work} \label {sec:relwork}
-
-Most previous research efforts tried to develop autonomic models for scheduling, resource allocation and task allocation for manufacturing managers using the intelligent agent approach. For instance, the dynamic scheduling problem in manufacturing floors is addressed in \cite{Pereira2010} by combining the methods of multi-agent systems, autonomic computing, and nature-inspired techniques. The authors of \cite{Madureira2008} propose a multi-agent autonomic and bio-inspired framework with self-managing capabilities to solve complex scheduling problems using cooperative negotiation. The work in \cite{Madureira2010} proposed the use of multi-agent systems to support dynamic and distributed scheduling in manufacturing systems in order to reduce the complexity of managing manufacturing systems and human interference. In \cite{Kota2012} autonomous agents enable the modification of  structural relations to achieve a better allocation of tasks in a simulated task-solving environment. In \cite{Bastos2004}, the authors present an autonomic solution based in a multi-agent model for resource allocation in a manufacturing environment. \cite{Lee2014} aims at providing effective and timely decision making for resource allocation by using a database management system (DBMS) and fuzzy logic to analyze data for intelligent decision making, and radio frequency identification (RFID) for result verification. In \cite{Delen2005}, the authors develop an intelligent decision support system for manufacturing systems (IDSS-MS), capable of providing structuring, analysis-tool selection, autonomic model generation and execution for a set of problem-symptoms. Finally, \cite{Park2005} proposes an autonomous manufacturing system based on swarm of cognitive agents (AMS-SCA) in order to adapt to the disturbances autonomously based on the reaction of each agent or the cooperation among them. While these approaches successfully produce an autonomic model for a complex manufacturing floor, they are limited by the fact that queries can only be posed against the entire model. This limits the algorithms from breaking the complex model into  small sub-models and posing queries to these sub-models to assess the problem at varying levels of granularity. Also, there is a lack of  visualization support for these models that restricts  managers from monitoring the autonomic actions from time-to-time. Our approach provides a simple additive mathematical formulation, based on queueing networks, for a complex manufacturing model that can easily be supported by a visualization software.
-
-Some research efforts also focus on the use of approximate queueing models to compute capacity requirements or the control variables of the model or for performing optimization on these models. For instance, \cite{Avsar2014}
-presents an approximated queueing model for base-stock controlled multi-stage production-inventory systems with capacity constraints by replacing some state-dependent conditional probabilities using recursive algorithms. \cite{Schonlein2013} suggests the use of fluid network analysis to quantify the robustness using a single number called the stability radius, which represents the worst case measure of the magnitude of the smallest shift of the expected value of the inter arrival and/or service times distributions. In \cite{Tuysuz2009}, the authors device an approach for modeling and analysis of time critical, dynamic and complex systems using stochastic Petri-nets together with fuzzy sets. Finally, \cite{Xia2011} uses perturbation analysis and sensitivity-based optimization to enable performance optimization of queueing systems. These queueing network models can be used to solve complex problems quickly to provide approximate results. But, there is a lack of a general approach that works for a domain of problems in manufacturing or supply chain. Our approach overcomes this  limitation by providing a generic autonomic framework for any discrete manufacturing domain problem that can be used to ask queries in the monitoring, analysis, planning and execution phases. Another limitation of the papers discussed here is  that it is not possible to reuse the components of the queueing network components without paying the penalty of having to remodel the underlying mathematical formulations. In our approach, it is possible to compose queuing networks for different process models without this penalty. This is especially useful in the manufacturing domain where explanations and changes to the floor happen frequently.
-
-
-
-\section{Concluding Remarks} \label{sec:conc}
-
-This paper presents an autonomic framework for smart manufacturing using the MAPE-K model used in autonomic computing. The K in MAPE-K stands for knowledge and includes a variety of models such as process models, predictive queuing network models, energy consumption models, and optimization models. An example shows how to map a process model to a queuing network model that can be used to predict overall manufacturing time, machine utilization and energy consumption, and overall energy consumed in the manufacturing process. The QN and energy models can then be used to solve optimization problems of interest as shown in the examples discussed in the paper. The MAPE-K framework provides for dynamic and integrated model-based decision making.
- 
-We are currently working on several extensions to the current work. For example, we plan to investigate algorithms to learn,  from collected data, the relationship between power and machine service time. We are also in the process of designing a GUI-based tool that will hide the complexity of building QN models from the production engineer. Such models will be built and solved automatically from a visual description of the process model.We are also investigating how to extend our approach to deal with composability, i.e., a man	ufacturing process is seen as part of a larger manufacturing process. For that purpose, we will examine the use of the theory of decomposability~\cite{courtois}.
 
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
