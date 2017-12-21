@@ -6,6 +6,10 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{newtxmath,newtxtext}
+ \usepackage{xcolor}
+  \newcommand\mycomment[1]{\textcolor{red}{\textbf{\textit{(#1)}}}}
+ \newcommand\mycommentn[1]{\textcolor{red}{\textbf{\textit{#1}}}\newline}
+ 
 
 \makeatletter
 
@@ -27,7 +31,7 @@
 %	TITLE
 %----------------------------------------------------------------------------------------
 
-\title{\textbf{SODA-m}} % Title
+\title{\textbf{SODA-m} \mycomment{to update}} % Title
 \author{Mohan Krishnamoorthy$^{a,2}$, Alexander Brodsky$^a$, and Daniel A. Menasc\'e$^{a}$} % Author
 
 
@@ -48,7 +52,7 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 \vspace{20pt}
 %% To
 %{\tiny Provide short biographical notes on all contributors here if the journal requires them\newline Word count: 5691}
-\footnotetext[1]{Word Count: 6319}
+\footnotetext[1]{Word Count: 6319 \mycomment{to update}}
 \footnotetext[2]{Corresponding Author}
 \end{flushleft} 
 
@@ -61,11 +65,12 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 
 
 \begin{abstract}{\small\noindent
+		\mycommentn{to update}
 We consider steady-state production processes that produce a product and have feasibility constraints and metrics of cost and throughput that are stochastic functions of process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying deterministic feasibility constraints and stochastic steady state demand for the output product with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. We demonstrate the proposed  algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining, and conduct an experimental study that shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
 }
 \end{abstract}
 
-{\small Keywords: decision support;
+{\small \mycomment{to update?} Keywords: decision support;
 	decision guidance;
 	deterministic approximations;
 	stochastic simulation optimization;
