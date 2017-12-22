@@ -6,7 +6,14 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{newtxmath,newtxtext}
+ \usepackage{enumitem}
+   \usepackage{listings}
+    \lstset{
+   	basicstyle=\ttfamily,
+   	mathescape
+   }
  \usepackage{xcolor}
+
   \newcommand\mycomment[1]{\textcolor{red}{\textbf{\textit{(#1)}}}}
  \newcommand\mycommentn[1]{\textcolor{red}{\textbf{\textit{#1}}}\newline}
  
@@ -43,7 +50,9 @@
 
 \begin{flushleft} 
 \vspace{10pt}
-$^a$\textit{Department of Computer Science, George Mason University, Fairfax, Virginia 22030, USA. Telephone No.: (703) 993-1537}\\
+$^a$\textit{Department of Computer Science, George Mason University, Fairfax, Virginia 22030, USA.
+% Telephone No.: (703) 993-1537
+}\\
 \vspace{20pt}
 $^a$\{mkrishn4, brodsky, menasce\}@gmu.edu \\
 \vspace{20pt}
@@ -135,56 +144,118 @@ The experimental study demonstrates that SODA-m \mycomment{complete this after r
 
 
 
+\section{Stochastic Optimization over Processes with Multiple Stochastic Feasibility Constraints and Closed-form Non-linear Arithmetic}
+\label{sec:prob}
 
-%%The domain challenges
-%Due to increased global demand, companies want to be competitive and look toward ways to reduce their cost and increase efficiency of operations. 
-%To address this, there is an increasing need for process analysis and optimization solutions, especially among companies that operate complex production systems. 
-%Examples of such systems include manufacturing processes, such as machining, assembly lines, and supply chain management.
-%These production systems are made up of processes that transform some input material to output product and they often involve controls that needs to set by the process operator.
-%In a real-world production system, the effects of these control settings may contain noise that makes the system stochastic.
-%Since, these settings influence the system's metrics of interest such as production cost, energy consumption, and carbon emissions as well as the state of the system's processes, the metrics and process state are also stochastic, and it is more difficult to evaluate the satisfiability of the constraints within these processes. 
-% Also, real-world production systems are typically composed of processes with continuous non-linear objectives.
-%Setting the control settings of the process is a difficult task because it needs to be done optimally i.e., the controls should be set such that some of the metrics are minimized or maximized while satisfying the capacity and demand constraints of the system. 
+We now borrow the stochastic optimization problem from \cite{GMU-CS-TR-2017-2} and extend it for  processes that have feasibility constraints over multiple stochastic metrics and are described using non-linear arithmetic.
+
+The stochastic optimization problem for such processes assumes a stochastic closed-form arithmetic (SCFA) simulation of the following form.
+A SCFA simulation on input variable $\vec{X}$ is a sequence $y_1=expr_1,\dots,y_n=expr_n$
+\newline where $expr_i, 1\le i \le n$ is either
+\begin{enumerate}[label=(\alph*)]
+	\item An arithmetic or boolean expression in terms of a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$. We say that $y_i$ is arithmetic or boolean if the $expr_i$ is arithmetic or boolean correspondingly.
+	\item An expression invoking $PD(\vec{P})$, which is a function that draws from a probability distribution (e.g., gaussian, exponential, uniform) using parameters $\vec{P}$ that are a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$.
+\end{enumerate}
+%y_i is deterministic or stochastic
+We say that $y_i, 1\le i \le n$ is stochastic if, recursively,
+\begin{enumerate}[label=(\alph*)]
+	\item $expr_i$ invokes $PD(\vec{P})$, or
+	\item $expr_i$ uses at least one stochastic variable $y_j, 1\le j < i$
+\end{enumerate}
+If $y_i$ is not stochastic, we say that it is deterministic.
+%SCFAI computes variable v if v is y_i for i in 1,...,n
+Also, we say that a SCFA simulation $\mathbb{S}$  computes a variable \textit{v} if $v=y_i$, for some $1\le i \le n$.
+
+\noindent To clarify, consider a simple SCFA simulation example that consists of the following sequence of expressions: 
+\begin{lstlisting}
+1: stochSpeed := speed + $\mathcal{N}$(0,$\sigma$)
+2: stochTime := $f$(stochSpeed)
+3: throughput := 1/stochTime
+4: cost := throughput $\times$ pricePerUnit
+5: C := lb $\le$ speed $\le$ ub
+\end{lstlisting}
+In this example, the SCFA simulation computes the stochastic arithmetic variables of \textit{cost} and \textit{throughput} as well as the deterministic boolean variable \textit{C}.
+The variable \textit{speed} is deterministic (e.g., machine speed) and it should be bounded within some lower bound (\textit{lb}) and upper bound (\textit{ub}).
+The boolean variable \textit{C} describes whether \textit{speed} is bounded.
+Also, the effects of \textit{speed} is stochastic (\textit{stochSpeed}) due to normally distributed random noise $\mathcal{N}(0,\sigma)$. 
+For the sake of brevity, say that the stochastic time to produce one item (\textit{stochTime}) is obtained from a function described in terms of \textit{stochSpeed}.
+Then, \textit{throughput} is computed as the inverse of \textit{stochTime} and \textit{cost} is computed as the product of \textit{throughput} and a fixed parameter of price to produce one unit of item (\textit{pricePerUnit}).
+
+%Our problem (with C, cost, thru)
+This paper considers the stochastic optimization problem of finding process controls that minimize the cost expectation while satisfying  deterministic process constraints and steady state demand for the output product with a given probability.
+More formally, the stochastic optimization problem is of the form:
+\begin{equation}
+\label{eq:stochProb}
+\begin{aligned}
+& \underset{\vec{X}\in\vec{D}}{\text{minimize}}
+& & E(\textit{cost}(\vec{X})) \\
+& \text{subject to}
+& & C(\vec{X}) \wedge \\
+&&& P(\textit{thru}(\vec{X}) \ge \theta) \ge \alpha
+\end{aligned}
+\end{equation}
+where $\vec{D} = D_1 \times \dots \times D_n$ is the domain for decision variables $\vec{X}$\\
+\indent\indent\indent$\vec{X}$ is a vector of decision variables that range over $\vec{D}$\\
+\indent\indent\indent\textit{cost}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
+\indent\indent\indent\textit{thru}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
+\indent\indent\indent$C(\vec{X})$ is a deterministic constraint in $\vec{X}$ i.e., a function $C:\vec{D} \rightarrow \{true,false\}$\\
+\indent\indent\indent$\theta \in \mathbb{R}$ is a throughput threshold\\
+\indent\indent\indent$\alpha \in [0,1]$ is a probability threshold, and\\
+\indent\indent\indent$P(\textit{thru}(\vec{X}) \ge \theta)$ is the probability that $\textit{thru}(\vec{X})$ is greater than or equal to $\theta$
+
+Note in this problem that upon increasing $\theta$ to some $\theta'$, the size of the space of alternatives that satisfy the stochastic demand constraint in equation \ref{eq:stochProb} increases and hence it can be said that the best solution, i.e., the minimum expected cost is monotonically improving in $\theta'$.
+We assume that the random variables, \textit{cost($\vec{X}$)} and \textit{thru($\vec{X}$)} as well as the deterministic constraint $C(\vec{X})$ are expressed by an SCFA simulation $\mathbb{S}$ that computes the stochastic arithmetic variable \textit{(cost, thru)} $ \in \vec{\mathbb{R}}^2$ as well as the deterministic boolean variable $C \in \{true, false\}$. 
+
+While we exemplified the SCFA simulation using a very simple example in this section, many complex real-world processes can be formulated as SCFA simulation such as the use case described in section \ref{sec:expProbSetup}.
+
+%While the SCFA simulation applies to complex real-wold production processes as shown in the use case described in section \ref{sec:expProbSetup}, to make the problem formulation clear, the SCFA simulation of a simple process is presented as an example here.
 
 
-%%The problem 
-%%%challenges
-%This task becomes even more difficult due to challenges in the real-world production system.
-%One such challenge is when the effects of the control settings contain noise that makes the system stochastic.
-%Since the effects of these settings influence the metrics of interest and the state of the system's processes, the metrics and process state are also stochastic, and it is more difficult to evaluate the satisfiability of the constraints within these processes. 
-%It is almost impossible to find exact solutions for such an optimization problem because of the inherent stochasticity present among these processes. 
-%Hence, there is a need to find an approximate solution to these problems efficiently and with fast rate of convergence.
-%Another challenge is that real-world production systems are typically composed of processes with continuous non-linear objectives.
-%Depending on the shape of the objective function, especially if non-convex or non-concave, there is a need for an optimization algorithm that will have to adapt to this function quickly in the stochastic setting. 
-%Finally, to support analysis and optimization of these complex real-world production systems, there is a need to accurately model machines, systems and processes so that they can provide accurate results in the stochastic environment.
-%These models need to capture (a) stochastic control variables; (b) metrics of machines (such as cost, energy consumption, and emission) as a function of these control variables; and (c) process routing that describes the flow of materials through the production system. 
-
-%%%why overcoming these challenges is important
-%To overcome these challenges, in this paper, we provide an efficient algorithm to solve the problem of optimizing a stochastic production system, that is, finding the control expectation setting for each process with non-linear objectives as to minimize the total cost of production subject to satisfying the production demand with a requested probability.
-%There is an urgent need to solve this problem efficiently as this would allow the process engineer to perform a variety of analysis and optimization tasks including what-if prediction and process optimization.
-%For example, as a prediction question, the process engineer may ask: what would be the production output as well as the overall system metrics such as cost, energy consumption and carbon emissions if one process is replaced with a faster process or if two processes do the task instead of just one?
-%Or, as an optimization question, a process engineer may ask: given the system design (which includes the flow of materials through the system), which machines should be on and off, and how to set up the controls of every operational machine, as to make a trade-off between optimizing overall production cost versus carbon emissions, while satisfying the demand, and within a limitation on the capacity of all the system components.
-
-
-%Optimization solvers and modeling languages based on MP and CP are often the technology of choice, when optimality and computational complexity are the priority.
-%Many classes of MP, such as linear programming (LP), mixed integer linear programming (MILP), and non-linear programming (NLP), have been very successful in solving real-world large-scale optimization problems. CP, on the other hand, has been broadly used for combinatorial optimization problems like scheduling and planning.  
-%To use these tools, one would have to use an algebraic modeling language such as A Modeling Language for Mathematical Programming (AMPL)
-%\cite{fourer2003ampl}, Optimization Programming Language (OPL) \cite{VanHentenryck:1999:OOP:299293}, General Algebraic Modeling System (GAMS) \cite{boisvert1985gams}, Gurobi \cite{gurobi}, or Advanced Interactive Multidimensional Modeling System (AIMMS) \cite{bisschop1993aimms}.  
-%However, not all real world problems, especially those that involve stochasticity, can be expressed and solved efficiently using these models/tools. 
-%Also, MP and CP present a significant challenge for engineers and business analysts. 
-%It requires an OR expert to model a problem and express it in an algebraic modeling language like the ones mentioned. 
-%Finally, these formal models are typically difficult to modify, extend, or reuse. This is comparable to ``spaghetti'' code versus an object-oriented approach.
-
-%%funnel low
-%Prior work in this area have tried to overcome some of the limitations described above.
-%For instance, the authors of \cite{Xu2014MultiFid} propose an ordinal transformation framework, which is a two stage optimization framework where a low fidelity model is built from the original problem, which is an abstraction of the original problem. This model is used to find candidates that would solve the reduced problem. Then, high fidelity simulations are used on these candidates to refine the solutions. 
-%But this approach does not consider problems that are in closed analytical form with stochasticity. For such problems, creating an abstraction of the original problem by dropping stochasticity allows us to use robust techniques such as deterministic approximation to find candidates with (near) optimal solutions. 
-%Also, this approach does not consider applications such as the production system where the flow of materials through the system is very complex and consists of a number of transformations taking place in parallel. Performing simulations on such applications may be cheap, but abstracting a low-fidelity model from such as system could be expensive and may not produce good candidates.
-%In \cite{Krishnamoorthy2015}, we proposed an efficient heuristic algorithm for processes that involved inventories and where the state of the processes and inventories changed at each time point over the time horizon. 
-%This algorithm was based on producing a set of high quality candidate machine settings based on deterministic approximations and then refining the solutions by running stochastic simulations on them to find the best machine setting from the candidate set. 
-%One main difference between our previous work and the work presented in this paper is that this paper considers the process to be in steady state and does not involve inventories.
-%Also, our previous work did not consider the real-world productions systems composed of complex processes with non-linear objectives, rather the processes there had piecewise linear objectives. 
-%Overcoming these limitations is exactly the focus of this paper.
+%
+%
+%
+%\subsection{Convergence of Solutions Involving Monte Carlo Simulation-based Optimization}
+%\label{ssec:convergenceProp}
+%In order to solve the the stochastic optimization problem described in equation \ref{eq:stochProb}, this paper proposes a simulation based optimization approach with deterministic approximation and heuristics. This approach incorporates the deterministic approximation procedure described in section \ref{ssec:detApproxModel} and then adds noise to the variables of the models to run simulation procedure based on Monte Carlo simulation described in section \ref{ssec:simProc}. In this section, we will show that when the mean of the noise distribution is 0, the noise becomes negligible when the number of simulations is very large due to which it is possible for simulation based optimization approaches to eventually converge to the optimal point. 
+%
+%If \textit{cost} is the total cost of production as obtained from the deterministic abstraction of the original stochastic problem, then, for \textit{n} sampled values of $\overrightarrow{\mathcal{N}}$, $E(\widehat{cost})_n$ is the expected value of the sample cost. Say that $E(\widehat{cost})$ is its true (population) expected value and suppose that it exist. Since all n sampled values of $\overrightarrow{\mathcal{N}}$ are independent and identically distributed with the same distribution as in $\overrightarrow{\mathcal{N}}$, we can claim that due to the weak law of large numbers, for any $\epsilon > 0$,
+%\begin{equation}
+%\label{eq:weakProp}
+%\begin{aligned}
+%& \lim_{n\to\infty} P(|E(\widehat{cost})_n - E(\widehat{cost})| \le \epsilon) = 1
+%\end{aligned}
+%\end{equation}
+%Going further, due to strong law of large numbers, it can be shown that for very large n, the sample mean will eventually converge towards its true mean and stay that way forever (even if we further increase n) i.e., the absolute error will be 0,
+%\begin{equation}
+%\label{eq:strongProp}
+%\begin{aligned}
+%& P(\lim_{n\to\infty} |E(\widehat{cost})_n - E(\widehat{cost})| = 0) = 1
+%\end{aligned}
+%\end{equation}
+% Therefore, as n $\rightarrow \infty$, absolute error $\rightarrow 0$. Thus the sample cost will eventually converge towards the true cost as n $\rightarrow \infty$
+%\begin{equation}
+%\label{eq:ExpCostEq}
+%\begin{aligned}
+%& E(\widehat{cost})_n = E(\widehat{cost})
+%\end{aligned}
+%\end{equation}
+%By central limit theorem, it is known that the absolute error ($E(\widehat{cost})_n - E(\widehat{cost})$) can be approximately described using a Gaussian noise $\mathcal{N}(0,\frac{SD(\widehat{cost})}{\sqrt{n}})$, where $SD(\widehat{cost})$ is the true (population) standard deviation. Assuming that the error is unbiased and since Monte Carlo simulations typically use large values of n, the true variance estimate will be close to the expected sample variance of the cost. Thus the absolute error can be described as $\mathcal{N}(0,\frac{SD(\widehat{cost})_n}{\sqrt{n}})$. This noise will eventually become negligible with its variance $\rightarrow 0$ as n $\rightarrow \infty$. With these results and assuming that the mean of the noise distribution is 0, we can say that the expected cost contains negligible noise and hence it can be written as:
+%
+%\begin{equation}
+%\label{eq:costEq}
+%\begin{aligned}
+%& E(\widehat{cost}_n)|_{n \rightarrow \infty} =E(\widehat{cost}) = cost 
+%\end{aligned}
+%\end{equation}
+%Similarly, we can show that:
+%\begin{equation}
+%\label{eq:thruEq}
+%\begin{aligned}
+%& E(\widehat{thru}_n)|_{n \rightarrow \infty}  = E(\widehat{thru}) = thru 
+%\end{aligned}
+%\end{equation}
+%
+%Simulation based optimization approaches that are based on Monte Carlo simulations, like the one used in this paper eventually converge to the optimal point. This is because the set of feasible solutions although very large, is finite and it is possible to enumerate all the possible solutions and apply a very large number of simulations on each solution to obtain its true value. Although, in our approach, we use deterministic approximations to reduce the search space considerably. As we will show through experimental results in section \ref{sec:expResults}, the convergence to (near) optimal solution happens very quickly even for complex production system in our approach.
 
 
 
