@@ -45,7 +45,7 @@
 %----------------------------------------------------------------------------------------
 
 \begin{document}
-
+\pagestyle{empty}
 \maketitle % Print the title section
 
 \begin{flushleft} 
@@ -66,6 +66,8 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 \end{flushleft} 
 
 \newpage
+\pagestyle{plain}
+\setcounter{page}{1}
 {\large \@title }
 \vspace{10pt}
 %----------------------------------------------------------------------------------------
@@ -74,7 +76,7 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 
 
 \begin{abstract}{\small\noindent
-We consider a process with feasibility constraints and metrics of interest including a cost function where the metrics are stochastic functions of the process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying deterministic feasibility constraints and multiple stochastic feasibility constraints with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
+We consider a process with feasibility constraints and metrics of interest including a cost function where the metrics are stochastic functions of the process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
 }
 \end{abstract}
 
@@ -90,7 +92,7 @@ We consider a process with feasibility constraints and metrics of interest inclu
 
 %Motivation
 This paper considers a process with feasibility constraints and metrics of interest including a cost function where the metrics are stochastic functions of the process controls.
-This paper is concerned with the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying deterministic feasibility constraints and multiple stochastic feasibility constraints with a given high probability.
+This paper is concerned with the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability.
 These problems are prevalent in manufacturing processes, such as assembly lines and supply chain management where the goal is to find the process controls that minimize the expected cost subject to satisfying deterministic control bound constraints and stochastic steady state demand for the multiple output products with a given high probability. 
 There is an increasing need for process analysis and optimization to solve this problem efficiently as companies want to be competitive and need to reduce their cost and improve efficiency of operations in the face of increased global competition. 
 
@@ -129,7 +131,7 @@ Hence, in this paper, we generalize SODA to close the gap for stochastic optimiz
 
 %Key contibutions
 More specifically, the contributions of this paper are two-fold:
-First, we propose a heuristic algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations for multiple metrics (SODA-m) to solve the problem of finding process controls that minimize the expectation of cost while satisfying the deterministic feasibility constraints and multiple stochastic feasibility constraints with a given high probability. 
+First, we propose a heuristic algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations for multiple metrics (SODA-m) to solve the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
 The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods (e.g., see \cite{Chen2011}, \cite{Lee2012OCBACO}).  
 %Second, we demonstrate the proposed algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining with models from the literature that use non-linear physics-based equations.
 Second, we conduct an initial experimental study over a real world use case of heat-sink service network to compare the proposed algorithm with four popular simulation-based stochastic optimization algorithms viz., Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
@@ -148,7 +150,6 @@ The experimental study demonstrates that SODA-m \mycomment{complete this after r
 \label{sec:prob}
 
 We now borrow the stochastic optimization problem from \cite{GMU-CS-TR-2017-3} and extend it for  processes that have feasibility constraints over multiple stochastic metrics and are described using non-linear arithmetic.
-
 The stochastic optimization problem for such processes assumes a stochastic closed-form arithmetic (SCFA) simulation of the following form.
 A SCFA simulation on input variable $\vec{X}$ is a sequence $y_1=expr_1,\dots,y_n=expr_n$
 \newline where $expr_i, 1\le i \le n$ is either
@@ -182,7 +183,7 @@ For the sake of brevity, say that the stochastic time to produce one item (\text
 Then, \textit{throughput} is computed as the inverse of \textit{stochTime} and \textit{cost} is computed as the product of \textit{throughput} and a fixed parameter of price to produce one unit of item (\textit{pricePerUnit}).
 
 %Our problem (with C, cost, thru)
-This paper considers the stochastic optimization problem of finding process controls that minimize the cost expectation while satisfying  deterministic process constraints and steady state demand for the output product with a given probability.
+This paper considers the stochastic optimization problem of finding process controls that minimize the cost expectation while satisfying multiple deterministic and stochastic feasibility constraints with a given probability.
 More formally, the stochastic optimization problem is of the form:
 \begin{equation}
 \label{eq:stochProb}
@@ -191,22 +192,23 @@ More formally, the stochastic optimization problem is of the form:
 & & E(\textit{cost}(\vec{X})) \\
 & \text{subject to}
 & & C(\vec{X}) \wedge \\
-&&& P(\textit{thru}(\vec{X}) \ge \theta) \ge \alpha
+&&& \forall_{k \in \{1,\dots,|\mathcal{M}|\}}P(m_k(\vec{X}) \ge \theta_k) \ge \alpha_k
 \end{aligned}
 \end{equation}
 where $\vec{D} = D_1 \times \dots \times D_n$ is the domain for decision variables $\vec{X}$\\
 \indent\indent\indent$\vec{X}$ is a vector of decision variables that range over $\vec{D}$\\
 \indent\indent\indent\textit{cost}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
-\indent\indent\indent\textit{thru}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
 \indent\indent\indent$C(\vec{X})$ is a deterministic constraint in $\vec{X}$ i.e., a function $C:\vec{D} \rightarrow \{true,false\}$\\
-\indent\indent\indent$\theta \in \mathbb{R}$ is a throughput threshold\\
-\indent\indent\indent$\alpha \in [0,1]$ is a probability threshold, and\\
-\indent\indent\indent$P(\textit{thru}(\vec{X}) \ge \theta)$ is the probability that $\textit{thru}(\vec{X})$ is greater than or equal to $\theta$
+\indent\indent\indent$\mathcal{M}$  is a set of random variables, all defined in terms of $\vec{X}$ and $m_k(\vec{X}) \in \mathcal{M}$\\
+\indent\indent\indent$\theta_k \in \mathbb{R}$ is the threshold for $m_k$\\
+\indent\indent\indent$\alpha_k \in [0,1]$ is the $k^{th}$ probability threshold, and\\
+\indent\indent\indent$P(m_k(\vec{X}) \ge \theta_k)$ is the probability that $m_k(\vec{X})$ is greater than or equal to $\theta_k$
 
-Note in this problem that upon increasing $\theta$ to some $\theta'$, the size of the space of alternatives that satisfy the stochastic demand constraint in equation \ref{eq:stochProb} increases and hence it can be said that the best solution, i.e., the minimum expected cost is monotonically improving in $\theta'$.
-We assume that the random variables, \textit{cost($\vec{X}$)} and \textit{thru($\vec{X}$)} as well as the deterministic constraint $C(\vec{X})$ are expressed by an SCFA simulation $\mathbb{S}$ that computes the stochastic arithmetic variable \textit{(cost, thru)} $ \in \vec{\mathbb{R}}^2$ as well as the deterministic boolean variable $C \in \{true, false\}$. 
+Note in this problem that upon increasing any $\theta_k$ to some $\theta_k'$, the size of the space of alternatives that satisfy the respective stochastic constraint in equation \ref{eq:stochProb} increases and hence it can be said that the best solution, i.e., the minimum expected cost is monotonically improving in $\theta_k'$.
 
-While we exemplified the SCFA simulation using a very simple example in this section, many complex real-world processes can be formulated as SCFA simulation such as the use case described in section \ref{sec:expProbSetup}.
+We assume that the random variables, \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\dots,m_k(\vec{X})$ as well as the deterministic constraint $C(\vec{X})$ are expressed by an SCFA simulation $\mathbb{S}$ that computes the stochastic arithmetic variable \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\dots,m_k(\vec{X}) \in \vec{\mathbb{R}}^{k+1}$ as well as the deterministic boolean variable $C \in \{true, false\}$. 
+
+%While we exemplified the SCFA simulation using a very simple example in this section, many complex real-world processes can be formulated as SCFA simulation such as the use case described in section \ref{sec:expProbSetup}.
 
 %While the SCFA simulation applies to complex real-wold production processes as shown in the use case described in section \ref{sec:expProbSetup}, to make the problem formulation clear, the SCFA simulation of a simple process is presented as an example here.
 
