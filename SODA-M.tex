@@ -271,18 +271,25 @@ So, the key idea of SODA-m is that instead of working with a large number of cho
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{images/Algo_Full.pdf}
-	\caption{Overview of SODA}
+	\caption{Overview of SODA-m}
 	\label{fig:algoOverview}       % Give a unique label
 \end{figure}
 
 
 \newcommand{\algoSODAm}{Algorithm 1}
+\newcommand{\algoInflDefl}{Algorithm 2}
+\newcommand{\algoPerfInfl}{Algorithm 3}
+\newcommand{\algoInflate}{Algorithm 4}
+\newcommand{\algoPerfDefl}{Algorithm 5}
+\newcommand{\algoDeflate}{Algorithm 6}
+\newcommand{\algoRefineCand}{Algorithm 7}
+\newcommand{\algoExOCBA}{Algorithm 8}
+\newcommand{\algoStochSim}{Algorithm 9}
 
 
 
-An overview of SODA is shown in Fig. \ref{fig:algoOverview} and a corresponding pseudo code is given in \algoSODAm. 
-To generate a small set of candidate control settings, SODA-m performs deterministic approximations of the original stochastic problem. 
-SODA achieves this by defining a deterministic computation $\mathbb{S}_0$ from the SCFA simulation $\mathbb{S}$ described in section \ref{sec:prob} by replacing every expression that uses a probability distribution $PD(\vec{P})$ with the expectation of that distribution. 
+An overview of SODA-m is shown in Fig. \ref{fig:algoOverview} and a corresponding pseudo code is given in \algoSODAm.~To generate a small set of candidate control settings, SODA-m performs deterministic approximations of the original stochastic problem. 
+SODA-m achieves this by defining a deterministic computation $\mathbb{S}_0$ from the SCFA simulation $\mathbb{S}$ described in section \ref{sec:prob} by replacing every expression that uses a probability distribution $PD(\vec{P})$ with the expectation of that distribution. 
 Thus the deterministic approximations \textit{cost$_0$}$(\vec{X})$, $m_{0,1}(\vec{X}),\dots,m_{0,k}(\vec{X})$ of \textit{cost}$(\vec{X})$, $m_1(\vec{X}),\dots,m_k(\vec{X})$, respectively can be expressed using $\mathbb{S}_0$.
 To optimize this reduced problem, a deterministic optimization problem that approximates the stochastic optimization problem shown in equation \ref{eq:stochProb} is used as a heuristic. This deterministic optimization problem can be described as follows:
 \begin{equation}
@@ -317,8 +324,13 @@ After the iterative \textit{inflate} and \textit{deflate} procedure, more simula
 To resolve this, these candidates are further refined in the \textit{refineCandidates} phase (right box in Fig. \ref{fig:algoOverview}) where a number of simulations are allocated to each candidate as obtained from an optimal simulation budget allocation method. These simulations are run on these candidates to check if this produces a new optimal solution.
 
 In this way, SODA-m uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of SODA-m are explained in greater detail with the help of their pseudo-code in the subsections below.
+
+\subsection{Inflate and Deflate Phase}
+\label{ssec:inflDefl}
+%TODO write about uniqueness of inflate and deflate iteration
+%TODO includ algo 9 into dicussion and say that generate candidates is adopted from prev paper
 \begin{figure*}
-\begin{minipage}[t]{.5\textwidth}
+\begin{minipage}[t]{.48\textwidth}
 	\begin{center}
 	\includegraphics[width=1\textwidth]{pseudoCode/Algo3-4.pdf}
 	\end{center}
@@ -330,6 +342,36 @@ In this way, SODA-m uses model knowledge from the white box simulation code in \
 	\end{center}
 \end{minipage}
 \end{figure*}
+
+The pseudo-code for the \textit{InflateDeflate} procedure is shown in \algoInflDefl~and it iteratively calls \textit{PerformInflations} and \textit{PerformDeflations} to perform deterministic approximation by inflating and deflating the bound parameters for a user defined budget or until there is no improvement in the objective cost ($\hat{O}.m$) for a certain number of iterations. The uniqueness of this procedure is that it is iterative and hence not only will the inflated bounds that satisfied the constraints with sufficient probability be the starting point for deflation but the bounds at which the deflation fails to satisfy any constraint with sufficient probability will be used to inflate from, thus yielding optimal solutions very early in the algorithm.
+
+The \textit{PerformInflations} procedure as shown in \algoPerfInfl~tries to iteratively find the inflated bounds for multiple constraints into $\overrightarrow{CIB}$ that can be used for deterministic approximation. The goal is that these inflated bounds will yield control settings when the problem in equation \ref{eq:detApprox} is solved and when these controls are used in the stochastic setting, the original constraints from the stochastic problem will be satisfied with sufficient probability.  
+To achieve this, the \textit{PerformInflations} procedure calls \textit{Inflate} that performs one iteration of inflation as shown in \algoInflate. 
+
+In the \textit{Inflate} procedure, first a number of candidate control settings with different objective costs are obtained by running a deterministic optimization with a constraint on the current bounds from $\overrightarrow{CIB}$ in the \textit{GenerateCandidates} procedure (\algoInflate~line 1). 
+We adopt \textit{GenerateCandidates} procedure as is from \cite{GMU-CS-TR-2017-3} where it chooses a random starting point for all the decision variables since the processes considered here have non-linear objectives that may not necessarily be convex. Then the deterministic problem with the current bounds and different starting points are solved to generate different candidates with different control setting and objective costs. More information and pseudo-code of this procedure can be found in \cite{GMU-CS-TR-2017-3}.
+
+
+The \textit{PerformInflations} procedure then calls the \textit{PerformStochasticSimulations} procedure as shown in \algoStochSim~that runs stochastic simulations on the candidate that yielded the least cost among the generated candidates and calculates the confidence of satisfaction of all the constraints as well as a verdict for this candidate that is returned back through the \textit{result} variable (\algoInflate~line 2). The \textit{result} variable can be \textit{accept}, when the probability of satisfaction of all the stochastic constraints are sufficiently high, \textit{reject}, when the probability of satisfaction of at least one of the stochastic constraint is not sufficiently high, and \textit{not-reject}, when \textit{accept} or \textit{reject} could not be decided for the number of simulations performed.
+
+For all the constraints where the probability of satisfaction of the stochastic constraint is not sufficiently high, a new inflated bound is computed as a function of number of standard deviations required to satisfy the constraint with desired probability. The assumption here is that the population is normally distributed and the standard deviation approaximately remains the same for the current bound and the inflated bound. Hence the inflated bound for the constraint is calculated by rearranging the terms in one-sample t-test (lines 4-14). 
+Finally, the \textit{result} variable, the new bounds ($\overrightarrow{NIB}$) and the generated candidates from the current iteration are returned from the \textit{Inflate} function (line 15). 
+This returned inormation is then used in the \textit{PerformInflations} function to store the candidates and update the objective cost (\algoPerfInfl~lines 4-11). This inflation process continues with the new bounds calculated by the \textit{Inflate} function until the \textit{result} is accept and inflation of the bound parameters are no longer necessary (line 12-16).
+
+%Deflation
+The \textit{PerformDeflations} function as shown in \algoPerfDefl~tries to iteratively deflate the bounds that were inflated. These deflated bounds can be used for deterministic approximation. The goal here is that using these deflated bounds in the deterministic problem (equation \ref{eq:detApprox}) will yield control settings that will not only satisfy the original constraints from the stochastic problem with sufficient probability but also do so with a better objective cost.  
+To achieve this, the \textit{PerformDeflations} function calls the \textit{Deflate} function that performs one iteration of deflation as shown in \algoDeflate. 
+In the \textit{Deflate} function, similar to the \textit{Inflate} function, the candidates are generated using the current bounds from $\overrightarrow{CIB}$ and stochastic simulations are run on these candidates to calculate the confidence of satisfaction of all the constraints and a verdict for the candidate in the \textit{result} variable (\algoDeflate~lines 1-2). 
+If the \textit{result} is \textit{accept} the interval between the current bound and the bound at which the last inflation occurred is divided by a constant amount from $\vec{\beta}$ (lines 4-13). 
+Finally, the \textit{result} variable, the new bounds ($\overrightarrow{NIB}$) and the generated candidates from the current iteration are returned from the \textit{Deflate} function (line 14). 
+This returned inormation is then used in the \textit{PerformedDeflations} function to store the candidates and update the objective cost (\algoDeflate~lines 3-9). This deflation process continues with the new bounds calculated by the \textit{Deflate} function until the \textit{result} is \textit{reject} and deflation of bounds is no longer useful to  generate better candidates (line 12-13).
+
+
+
+
+
+\subsection{Candidate Refinement Phase}
+\label{ssec:refineCand}
 
 \begin{figure*}
 	\begin{minipage}{\textwidth}
@@ -352,7 +394,25 @@ In this way, SODA-m uses model knowledge from the white box simulation code in \
 	\end{minipage}
 \end{figure*}
 
+After generating the candidate sets using deterministic approximations, SODA-m refines these candidates by running Monte Carlo simulations on them in this phase. 
+To maximize the likelihood of selecting the best candidate, i.e., candidate with the least cost and sufficient probability of constraint satisfaction, this phase uses the Optimal Computing Budget Allocation method for Constraint Optimization (OCBA-CO) \cite{Lee2012OCBACO} to allocate some delta budget among the candidates so that the greatest fraction of the budget is allocated to the most promising candidates in the candidate set and in each iteration of this phase, this allocated simulation budget is run on the candidates.
+In each subsequent iteration, OCBA-CO can use the updated estimates to find new promising candidates and allocate a greater fraction of the delta budget to them to check if these candidates can be further refined.
 
+The pseudo-code for the \textit{RefineCandidates} procedure is given in \algoRefineCand. 
+In this procedure, first, simulations are run on any candidates for which there are no base statistic, i.e, candidates on which simulations was not run in the inflate and deflate phase. Those candidates that return the result of \textit{accept} and whose objective cost is statistically better than the best objective cost are stored for further consideration (\algoRefineCand~lines 1-2).
+Then, this phase uses the \textit{ExtendedOCBA} procedure, which is based on OCBA-CO, to iteratively allocate a fraction of the delta budget among the candidates (line 6).
+Then, stochastic simulations are run for the allocated number of simulations for each candidate (line 8).
+If the calculated verdict for the candidate (\textit{result}) is \textit{accept} and if the cost is further minimized, then the best cost is updated (lines 9-10).
+On the other hand, if the \textit{result} is \textit{reject}, then the candidate is removed from further consideration (lines 11-12).
+This iteration of budget allocation and simulation refinement continues until some maximum budget number of simulation budget is depleted.
+
+The pseudo-code for the \textit{ExtendedOCBA} based on OCBA-CO procedure is given in \algoExOCBA.
+This procedure allocates a greater fraction of the delta budget to candidates that have the highest likelihood of being the best candidate or near the best candidate. 
+In this case, the best candidate is the one with the best cost with sufficient confidence of satisfaction of all the stochastic constraints (line 1).
+This procedure creates two sets for the non-best candidates: $\theta_O$ where optimality of cost objective is a more dominant feature among the candidates and $\theta_F$ where probability of a significant constraint is a more dominant feature among the candidates (lines 2-3). 
+Then, the noise-to-signal ratio of each candidate is obtained (line 4).
+Finally, the number of allocated simulations is obtained proportional to their noise-to-signal ratio (lines 5-10). 
+More details about the OCBA-CO algorithm can be obtained from \cite{Lee2012OCBACO}.
 
 
 
