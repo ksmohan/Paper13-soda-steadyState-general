@@ -275,6 +275,7 @@ So, the key idea of SODA-m is that instead of working with a large number of cho
 	\label{fig:algoOverview}       % Give a unique label
 \end{figure}
 
+
 \newcommand{\algoSODAm}{Algorithm 1}
 
 
@@ -296,6 +297,12 @@ To optimize this reduced problem, a deterministic optimization problem that appr
 \end{equation}
 where $\theta_1{'} \ge \theta_1,\dots,\theta_k{'} \ge \theta_k$ are conservative approximations of $\theta_1,\dots,\theta_k$. 
 
+\begin{figure*}
+	\begin{center}
+	\includegraphics[width=.7\textwidth]{pseudoCode/Algo1-2.pdf}
+	\end{center}
+
+\end{figure*}
 This deterministic approximation is performed iteratively such that the control settings found in the current iteration are more likely to satisfy the stochastic constraints with the desired probability than in the previous iterations. This is possible because of the \textit{inflate} phase (left box of Fig. \ref{fig:algoOverview}) and the \textit{deflate} phase (middle box of Fig. \ref{fig:algoOverview}) of SODA-m. 
 
 The \textit{inflate} phase is intuitively trying to increase the bounds to satisfy the stochastic constraints with the desired probability. 
@@ -310,6 +317,43 @@ After the iterative \textit{inflate} and \textit{deflate} procedure, more simula
 To resolve this, these candidates are further refined in the \textit{refineCandidates} phase (right box in Fig. \ref{fig:algoOverview}) where a number of simulations are allocated to each candidate as obtained from an optimal simulation budget allocation method. These simulations are run on these candidates to check if this produces a new optimal solution.
 
 In this way, SODA-m uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of SODA-m are explained in greater detail with the help of their pseudo-code in the subsections below.
+\begin{figure*}
+\begin{minipage}[t]{.5\textwidth}
+	\begin{center}
+	\includegraphics[width=1\textwidth]{pseudoCode/Algo3-4.pdf}
+	\end{center}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{.5\textwidth}
+		\begin{center}
+\includegraphics[width=1\textwidth]{pseudoCode/Algo5-6.pdf}
+	\end{center}
+\end{minipage}
+\end{figure*}
+
+\begin{figure*}
+	\begin{minipage}{\textwidth}
+		\begin{center}
+		\includegraphics[width=.7\textwidth]{pseudoCode/Algo7.pdf}
+	\end{center}
+	\end{minipage}
+	\vspace{1em} % add some whitespace after the first figure
+	
+	\begin{minipage}[b]{0.54\textwidth}
+		\begin{center}
+		\includegraphics[width=1\textwidth]{pseudoCode/Algo8.pdf}
+	\end{center}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\begin{center}
+		\includegraphics[width=1\textwidth]{pseudoCode/Algo9.pdf}
+	\end{center}
+	\end{minipage}
+\end{figure*}
+
+
+
 
 
 
