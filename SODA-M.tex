@@ -126,16 +126,16 @@ However, the class of problems considered in \cite{Krishnamoorthy2015} is limite
 Whereas, many processes have models based on physics-based equations with non-linear arithmetic. 
 
 To close this gap, we extended the heuristic algorithm from \cite{Krishnamoorthy2015} to an algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the stochastic optimization problem over a composite service network that involve processes described using non-linear arithmetic \cite{GMU-CS-TR-2017-3}.
-However, SODA was only designed for problems with processes that involved stochastic constraint over a single output metric. Whereas, many processes, particularly in manufacturing, have multiple outputs and the stochastic optimization problem needs to consider the satisfaction of the stochastic constraint over all these output metrics. 
-Hence, in this paper, we generalize SODA to close the gap for stochastic optimization problems for processes that have feasibility constraints over multiple stochastic metrics while being described using non-linear arithmetic.
+However, SODA was limited to production processes with stochastic metrics of cost and throughput and the only stochastic constraint considered was that of demand satisfaction with sufficient probability. Whereas, many processes have multiple stochastic metrics and the stochastic optimization problem needs to consider the satisfaction of multiple constraints over these stochastic metrics with sufficient probability. 
+Hence, in this paper, we generalize SODA to close the gap for stochastic optimization of processes that have feasibility constraints over multiple stochastic metrics while being described using non-linear arithmetic.
 
 %Key contibutions
 More specifically, the contributions of this paper are two-fold:
-First, we propose a heuristic algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations with multiple constraints (SODA-m) to solve the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
+First, we propose a heuristic algorithm called general Stochastic Optimization Algorithm based on Deterministic Approximations (g-SODA) to solve the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
 The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods (e.g., see \cite{Chen2011}, \cite{Lee2012OCBACO}).  
 %Second, we demonstrate the proposed algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining with models from the literature that use non-linear physics-based equations.
 Second, we conduct an initial experimental study over a real world use case of heat-sink service network to compare the proposed algorithm with four popular simulation-based stochastic optimization algorithms viz., Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
-The experimental study demonstrates that SODA-m \mycomment{complete this after running experiments}
+The experimental study demonstrates that g-SODA \mycomment{complete this after running experiments}
 % significantly outperforms the other algorithms in terms of optimality of results and computation time. In particular, 
 %running over a 12-process problem using a 8-core server with 16GB RAM,
 %in 40 minutes, SODA achieves a production  cost lower than that of competing algorithms by 61\%; in 16 hours SODA achieves 29\% better cost; and, in 3 days it achieves 7\% better cost.
@@ -192,21 +192,22 @@ More formally, the stochastic optimization problem is of the form:
 & & E(\textit{cost}(\vec{X})) \\
 & \text{subject to}
 & & C(\vec{X}) \wedge \\
-&&& \forall_{k \in \{1,\dots,|\mathcal{M}|\}}P(m_k(\vec{X}) \ge \theta_k) \ge \alpha_k
+&&& \forall_{i\in\{1,\dots,k\}}P(m_i(\vec{X}) \ge \theta_i) \ge \alpha_i
 \end{aligned}
 \end{equation}
 where $\vec{D} = D_1 \times \dots \times D_n$ is the domain for decision variables $\vec{X}$\\
 \indent\indent\indent$\vec{X}$ is a vector of decision variables that range over $\vec{D}$\\
 \indent\indent\indent\textit{cost}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
 \indent\indent\indent$C(\vec{X})$ is a deterministic constraint in $\vec{X}$ i.e., a function $C:\vec{D} \rightarrow \{true,false\}$\\
-\indent\indent\indent$\mathcal{M}$  is a set of random variables, all defined in terms of $\vec{X}$ and $m_k(\vec{X}) \in \mathcal{M}$\\
-\indent\indent\indent$\theta_k \in \mathbb{R}$ is the threshold for $m_k$\\
-\indent\indent\indent$\alpha_k \in [0,1]$ is the $k^{th}$ probability threshold, and\\
-\indent\indent\indent$P(m_k(\vec{X}) \ge \theta_k)$ is the probability that $m_k(\vec{X})$ is greater than or equal to $\theta_k$
+%\indent\indent\indent$\mathcal{M}$  is a set of random variables, all defined in terms of $\vec{X}$ and $m_k(\vec{X}) \in \mathcal{M}$\\
+\indent\indent\indent $m_1(\vec{X}),\dots,m_k(\vec{X})$ are random variable defined in terms of $\vec{X}$\\
+\indent\indent\indent$\theta_i,\dots,\theta_k \in \mathbb{R}^k$ are the constraint thresholds \\
+\indent\indent\indent$\alpha_1,\dots,\alpha_k \in [0,1]^k$ are the probability threshold, and\\
+\indent\indent\indent$P(m_i(\vec{X}) \ge \theta_i)$ is the probability that $m_i(\vec{X})$ is greater than or equal to $\theta_i$, and\\\indent\indent\indent\indent\indent\indent\indent~$i\in\{1,\dots,k\}$
 
 Note in this problem that upon increasing any $\theta_k$ to some $\theta_k'$, the size of the space of alternatives that satisfy the respective stochastic constraint in equation \ref{eq:stochProb} increases and hence it can be said that the best solution, i.e., the minimum expected cost is monotonically improving in $\theta_k'$.
 
-We assume that the random variables, \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\dots,m_k(\vec{X})$ as well as the deterministic constraint $C(\vec{X})$ are expressed by an SCFA simulation $\mathbb{S}$ that computes the stochastic arithmetic variable \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\dots,m_k(\vec{X}) \in \vec{\mathbb{R}}^{k+1}$ as well as the deterministic boolean variable $C \in \{true, false\}$. 
+We assume that the random variables, \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\dots,m_k(\vec{X})$ as well as the deterministic constraint $C(\vec{X})$ are expressed by an SCFA simulation $\mathbb{S}$ that computes the corresponding stochastic arithmetic variables \textit{cost}, $m_1,\dots,m_k$ as well as the deterministic boolean variable $C \in \{true, false\}$. 
 
 %While we exemplified the SCFA simulation using a very simple example in this section, many complex real-world processes can be formulated as SCFA simulation such as the use case described in section \ref{sec:expProbSetup}.
 
@@ -260,18 +261,18 @@ We assume that the random variables, \textit{cost($\vec{X}$)}, $m_1(\vec{X}),\do
 %Simulation based optimization approaches that are based on Monte Carlo simulations, like the one used in this paper eventually converge to the optimal point. This is because the set of feasible solutions although very large, is finite and it is possible to enumerate all the possible solutions and apply a very large number of simulations on each solution to obtain its true value. Although, in our approach, we use deterministic approximations to reduce the search space considerably. As we will show through experimental results in section \ref{sec:expResults}, the convergence to (near) optimal solution happens very quickly even for complex production system in our approach.
 
 
-\section{Stochastic Optimization Algorithm based on Deterministic Approximations with multiple constraints}
+\section{General Optimization Algorithm over Stochastic Closed-form Arithmetic simulations}
 \label{sec:algo}
 
-This section presents the Stochastic Optimization Algorithm based on Deterministic Approximations with multiple constraints (SODA-m). 
-The problem of stochastic optimization considered in this paper can be solved using simulation-based optimization approaches by initializing the control settings and performing simulations to check whether the stochastic constraints are satisfied with sufficient probability.
+This section presents the general Stochastic Optimization Algorithm based on Deterministic Approximations (g-SODA) over the SCFA simulations described in section \ref{sec:prob}. 
+This stochastic optimization problem can be solved using simulation-based optimization approaches by initializing the control settings and performing simulations to check whether the stochastic constraints are satisfied with sufficient probability.
 But such an approach is inefficient because the stochastic space of this problem is very large and hence this approach will typically converge very slowly to the optimum solution.
-So, the key idea of SODA-m is that instead of working with a large number of choices in the stochastic space, we use deterministic approximations to generate a small set of candidate control settings and then validate these control settings in the stochastic space using simulations.
+So, the key idea of g-SODA is that instead of working with a large number of choices in the stochastic space, we use deterministic approximations to generate a small set of candidate control settings and then validate these control settings in the stochastic space using simulations.
 
 
 \begin{figure}
 	\includegraphics[width=\textwidth]{images/Algo_Full.pdf}
-	\caption{Overview of SODA-m}
+	\caption{Overview of g-SODA}
 	\label{fig:algoOverview}       % Give a unique label
 \end{figure}
 
@@ -288,8 +289,8 @@ So, the key idea of SODA-m is that instead of working with a large number of cho
 
 
 
-An overview of SODA-m is shown in Fig. \ref{fig:algoOverview} and a corresponding pseudo code is given in \algoSODAm.~To generate a small set of candidate control settings, SODA-m performs deterministic approximations of the original stochastic problem. 
-SODA-m achieves this by defining a deterministic computation $\mathbb{S}_0$ from the SCFA simulation $\mathbb{S}$ described in section \ref{sec:prob} by replacing every expression that uses a probability distribution $PD(\vec{P})$ with the expectation of that distribution. 
+An overview of g-SODA is shown in Fig. \ref{fig:algoOverview} and a corresponding pseudo code is given in \algoSODAm.~To generate a small set of candidate control settings, g-SODA performs deterministic approximations of the original stochastic problem. 
+g-SODA achieves this by defining a deterministic computation $\mathbb{S}_0$ from the SCFA simulation $\mathbb{S}$ described in section \ref{sec:prob} by replacing every expression that uses a probability distribution $PD(\vec{P})$ with the expectation of that distribution. 
 Thus the deterministic approximations \textit{cost$_0$}$(\vec{X})$, $m_{0,1}(\vec{X}),\dots,m_{0,k}(\vec{X})$ of \textit{cost}$(\vec{X})$, $m_1(\vec{X}),\dots,m_k(\vec{X})$, respectively can be expressed using $\mathbb{S}_0$.
 To optimize this reduced problem, a deterministic optimization problem that approximates the stochastic optimization problem shown in equation \ref{eq:stochProb} is used as a heuristic. This deterministic optimization problem can be described as follows:
 \begin{equation}
@@ -310,25 +311,23 @@ where $\theta_1{'} \ge \theta_1,\dots,\theta_k{'} \ge \theta_k$ are conservative
 	\end{center}
 
 \end{figure*}
-This deterministic approximation is performed iteratively such that the control settings found in the current iteration are more likely to satisfy the stochastic constraints with the desired probability than in the previous iterations. This is possible because of the \textit{inflate} phase (left box of Fig. \ref{fig:algoOverview}) and the \textit{deflate} phase (middle box of Fig. \ref{fig:algoOverview}) of SODA-m. 
+This deterministic approximation is performed iteratively such that the control settings found in the current iteration are more likely to satisfy the stochastic constraints with the desired probability than in the previous iterations. This is possible because of the \textit{inflate} phase (left box of Fig. \ref{fig:algoOverview}) and the \textit{deflate} phase (middle box of Fig. \ref{fig:algoOverview}) of g-SODA. 
 
 The \textit{inflate} phase is intuitively trying to increase the bounds to satisfy the stochastic constraints with the desired probability. 
 When the current candidate control settings do not generate any metric that satisfies its respective user-defined bound with a desired probability, this bound parameter itself is artificially inflated as a function of the number of standard deviations required so that the metric satisfies the bound with desired probability.
 This inflation very quickly yields metrics that satisfy its respective user-defined bound. However, this may result in the metric overshooting the bound, which degrades the objective cost. 
 
-To overcome this, in the \textit{deflate} phase, SODA-m scales the inflated bounds back by calculating the discrete points for all bounds between when the constraint was satisfied with sufficient probability and when the last inflation occurred.
+To overcome this, in the \textit{deflate} phase, g-SODA scales the inflated bounds back by calculating the discrete points for all bounds between when the constraint was satisfied with sufficient probability and when the last inflation occurred.
  Deterministic approximations are run for this lower bound to check whether the updated metric still satisfies the user-defined bound with desired probability while yielding a better objective cost. 
  In this way, the \textit{inflate} and \textit{deflate} phases find a more optimum bound threshold for all stochastic constraints for which it can get the right balance between optimum cost and stochastic constraint satisfaction with desired probability.
 
 After the iterative \textit{inflate} and \textit{deflate} procedure, more simulations may be needed to check if a promising candidate that currently is not a top candidate could be the optimal solution or to choose an optimal solution from multiple candidates. 
 To resolve this, these candidates are further refined in the \textit{refineCandidates} phase (right box in Fig. \ref{fig:algoOverview}) where a number of simulations are allocated to each candidate as obtained from an optimal simulation budget allocation method. These simulations are run on these candidates to check if this produces a new optimal solution.
 
-In this way, SODA-m uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of SODA-m are explained in greater detail with the help of their pseudo-code in the subsections below.
+In this way, g-SODA uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of g-SODA are explained in greater detail with the help of their pseudo-code in the subsections below.
 
 \subsection{Inflate and Deflate Phase}
 \label{ssec:inflDefl}
-%TODO write about uniqueness of inflate and deflate iteration
-%TODO includ algo 9 into dicussion and say that generate candidates is adopted from prev paper
 \begin{figure*}
 \begin{minipage}[t]{.48\textwidth}
 	\begin{center}
@@ -343,7 +342,7 @@ In this way, SODA-m uses model knowledge from the white box simulation code in \
 \end{minipage}
 \end{figure*}
 
-The pseudo-code for the \textit{InflateDeflate} procedure is shown in \algoInflDefl~and it iteratively calls \textit{PerformInflations} and \textit{PerformDeflations} to perform deterministic approximation by inflating and deflating the bound parameters for a user defined budget or until there is no improvement in the objective cost ($\hat{O}.m$) for a certain number of iterations. The uniqueness of this procedure is that it is iterative and hence not only will the inflated bounds that satisfied the constraints with sufficient probability be the starting point for deflation but the bounds at which the deflation fails to satisfy any constraint with sufficient probability will be used to inflate from, thus yielding optimal solutions very early in the running of SODA-m.
+The pseudo-code for the \textit{InflateDeflate} procedure is shown in \algoInflDefl~and it iteratively calls \textit{PerformInflations} and \textit{PerformDeflations} to perform deterministic approximation by inflating and deflating the bound parameters for a user defined budget or until there is no improvement in the objective cost ($\hat{O}.m$) for a certain number of iterations. The uniqueness of this procedure is that it is iterative and hence not only will the inflated bounds that satisfied the constraints with sufficient probability be the starting point for deflation but the bounds at which the deflation fails to satisfy any constraint with sufficient probability will be used to inflate from, thus yielding optimal solutions very early in the running of g-SODA.
 
 The \textit{PerformInflations} procedure as shown in \algoPerfInfl~tries to iteratively find the inflated bounds for multiple constraints into $\overrightarrow{CIB}$ that can be used for deterministic approximation. The goal is that these inflated bounds will yield control settings when the problem in equation \ref{eq:detApprox} is solved and when these controls are used in the stochastic setting, the original constraints from the stochastic problem will be satisfied with sufficient probability.  
 To achieve this, the \textit{PerformInflations} procedure calls \textit{Inflate} that performs one iteration of inflation as shown in \algoInflate. 
@@ -394,7 +393,7 @@ This returned inormation is then used in the \textit{PerformedDeflations} proced
 	\end{minipage}
 \end{figure*}
 
-After generating the candidate sets using deterministic approximations, SODA-m refines these candidates by running Monte Carlo simulations on them in this phase. 
+After generating the candidate sets using deterministic approximations, g-SODA refines these candidates by running Monte Carlo simulations on them in this phase. 
 To maximize the likelihood of selecting the best candidate, i.e., candidate with the least cost and sufficient probability of constraint satisfaction, this phase uses the Optimal Computing Budget Allocation method for Constraint Optimization (OCBA-CO) \cite{Lee2012OCBACO} to allocate some delta budget among the candidates so that the greatest fraction of the budget is allocated to the most promising candidates in the candidate set and in each iteration of this phase, this allocated simulation budget is run on the candidates.
 In each subsequent iteration, OCBA-CO can use the updated estimates to find new promising candidates and allocate a greater fraction of the delta budget to them to check if these candidates can be further refined.
 
@@ -414,7 +413,15 @@ Then, the noise-to-signal ratio of each candidate is obtained (line 4).
 Finally, the number of allocated simulations is obtained proportional to their noise-to-signal ratio (lines 5-10). 
 More details about the OCBA-CO algorithm can be obtained from \cite{Lee2012OCBACO}.
 
+%TODO Write about application of this to DGS/DSS (Look at similar paragraph in paper 4)
 
+%TODO Write about comparing this algo with baysian opt and other techniques/tools (look @ dicussion section of paper 10)
+\section{Experimental Setup and Results}
+\label{sec:expResults}
+
+%TODO 2 graphs: SODA for 1 day and 3 days with comparison 
+
+%TODO Write about when SODA jumps down and whats going on there and why
 
 
 %----------------------------------------------------------------------------------------
