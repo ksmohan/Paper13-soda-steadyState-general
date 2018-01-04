@@ -412,6 +412,82 @@ More details about the OCBA-CO algorithm can be obtained from \cite{Lee2012OCBAC
 
 \section{Experimental Study}
 \label{sec:expResults}
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=0.7\textwidth]{images/HeatSink_contractSN.pdf}
+		\caption{Graphical representation of the Heat-Sink Production Process (HSPP)}
+		\label{fig:heatsinkSC}       % Give a unique label
+	\end{center}
+\end{figure}
+
+This section describes the experimental study that was conducted to evaluate g-SODA in terms of its quality of objective cost and rate of convergence as compared to four metaheuristic simulation-based optimization algorithms. 
+In this study a real-world use-case of the Heat Sink Production Process (HSPP) is considered.
+The graphical representation for the HSPP  is shown in Fig. \ref{fig:heatsinkSC}.
+The production process can be described as a composition of three sub-processes of \textit{supply}, \textit{production}, and \textit{demand}. 
+The \textit{supply} sub-process further contains the suppliers of the raw materials for the heat-sink part, which includes suppliers of \textit{aluminum}, \textit{heat-sink case} and \textit{accessories} such as screws, and bolts. 
+The production sub-process contains processes that will transform the input raw materials into the output heat-sink part. 
+To do this, the raw material of \textit{aluminum} is first cut using a \textit{cutting/shearing} process. Then, the cut aluminum is sent to a \textit{CNC machining} process that uses the \textit{milling} and \textit{drilling} sub-processes to mill and drill on the cut aluminum part to produce the raw heat-sink part. Then, this raw part goes through the \textit{washing and finishing} process, after which it is inspected for defects and accuracy in the \textit{quality inspection} process. Finally, this inspected part is assembled together with the \textit{heat-sink case} using the \textit{accessories} in the \textit{assembly} process.
+The last sub-process is a virtual process for \textit{demand}, which contains processes that dictate the minimum number of aluminum plate, finished Heat Sink, and Heat Sink Base to be produced so as to satisfy either the customer demand or foretasted sales. 
+
+
+To conduct the experimental study, first the SCFA simulation of HSPP is written in JSONiq. An overview of the SCFA simulation for a production process in given in \cite{GMU-CS-TR-2017-3}.  The code for g-SODA is written in Java. The deterministic approximations for g-SODA are performed using a system that automatically converts the SCFA simulation of HSPP into a deterministic optimization problem, which is a deterministic abstraction of the original SCFA simulation. Discussing the code of the SCFA simulation for HSPP and the system that performs its automatic conversion is outside the scope of this paper. But more details about an initial realization of these can be found in \cite{Brodsky2016ieeebd,Brodsky2017ieeebd}.
+
+For the comparison algorithms, we used the jMetal package, which is an object-oriented Java-based framework for multi-objective optimization with metaheuristics \cite{jMetal}. The algorithms chosen for comparison include Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
+All these algorithms use the SCFA of HSPP to perform the computation of the cost, throughput and feasibility constraints. The computation of the demand satisfaction information from expected throughput is also similar to that of g-SODA. The cost and constraint satisfaction information is then used by the jMetal algorithms to further increase or decrease the control settings using heuristics.
+
+We ran g-SODA was in two different settings. 
+In the first setting, g-SODA was run for one day with 5,000 iterations of \textit{InflateDeflate}. In the second setting, g-SODA was run for approximately 72 hours (three days) with 10,000 iterations of \textit{InflateDeflate}. There were 22 decision variables and 21 stochastic constraints in the stochastic optimization problem over HSPP. The probability bound and the confidence bound for all stochastic constraints were set to 0.95 and 99\% respectively. Additionally, all production processes in HSPP were stochastic due to noise added to their controls. This noise has a mean of 0 and standard deviation between 1.8 to 2.8. 
+Finally, the demand for aluminum plate, finished Heat Sink, and Heat Sink Base were set to 8, 4, and 6 respectively.
+The comparison algorithms were also run with the same (relevant) parameters.
+
+\begin{figure}
+	\begin{minipage}{.5\textwidth}
+	\begin{center}
+	\includegraphics[width=\textwidth]{images/sodavsjmetal1day.pdf}
+	\caption{Estimated average cost for the elapsed time (max runtime = one day) (x-axis in normal scale}
+	\label{fig:GraphsForTime_24hours}       % Give a unique label
+\end{center}
+\end{minipage}
+%	\vspace{.5em} % add some whitespace after the first figure
+\hfill
+\begin{minipage}{.5\textwidth}
+	\begin{center}
+	\includegraphics[width=\textwidth]{images/sodavsjmetal3day.pdf}
+	\caption{Estimated average cost for the elapsed time (max runtime = three days) (x-axis in log-scale)}
+	\label{fig:GraphsForTime_3days}       % Give a unique label
+\end{center}
+\end{minipage}
+\end{figure}
+
+%SODA vs JMetal
+The data collected from the experiments include the estimated average costs achieved at different elapsed time points for g-SODA in two settings and all the comparison algorithms. 
+Fig.~\ref{fig:GraphsForTime_24hours} shows the estimated average costs achieved after one day whereas Fig. \ref{fig:GraphsForTime_3days} shows the estimated average costs achieved after about three days. Each experiment was run multiple times and 95\% confidence bars are included around the mean at certain elapsed time point in both figures. 
+
+It can be observed that both settings of g-SODA perform better than the comparison algorithms initially. This is because g-SODA uses deterministic approximation to reduce the search space of potential candidates quickly whereas the competing algorithms start at a random point in the search space and need a number of additional iterations (and time) to even find candidates that satisfy all the stochastic constraints with sufficient probability. 
+
+As time progresses, SODA in both settings is able to achieve much better expected cost in the \textit{inflateDeflate} phase itself whereas the comparison algorithms proceed to reduce the gap to g-SODA very slowly.
+Hence, we claim that g-SODA is able to converge quicker toward the points close to the (near) optimal solution found at the end of the algorithm. This is because g-SODA uses heuristics in the \textit{inflate} and \textit{deflate} phases that reduce the search space quickly, which allows g-SODA to quickly converge toward a more promising candidate. 
+
+Additionally, g-SODA is able to reduce the cost further in the \textit{RefineCandidates} phases with OCBA-CO simulation budget allocation. Due to this, it is observed that the solutions found by g-SODA at the end of the experiment are much better than those found by the competing algorithms.
+After one day, the expected cost found by g-SODA was 42\% better than the nearest comparison algorithm (SMPSO) (see Fig. \ref{fig:GraphsForTime_24hours}). After three days, the advantage for g-SODA over the nearest comparison algorithm (SMPSO) reduces to 25\% and that to the second best algorithm (NSGA2) is 28\% (see Fig. \ref{fig:GraphsForTime_3days}). 
+%This is not surprising since SMPSO and NSGA2 use strong meta-heuristics and given enough time such algorithms will eventually converge toward the (near) optimal solution found by g-SODA. Although, it should be noted from Fig. \ref{fig:GraphsForTime_3days} that g-SODA reaches close to the optimal solution found at the end much more quickly than its competition. Also, since the x-axis in Fig. \ref{fig:GraphsForTime_3days} is in log scale, it should be noted that out of the total experiment time of about 259,200 sec, the other algorithms stop improving at around 180,911 sec whereas g-SODA continues to improve for a longer time (until about 210,562 sec) due to a good collection of candidates from the \textit{InflateDeflate} phase and performing simulation refinements using an optimal budget allocation scheme of OCBA-CO in \textit{RefineCandidates} phase. 
+We also ran the Tukey-Kramer procedure for pairwise comparisons of correlated means on all six algorithm types. By doing so, we confirmed that g-SODA was indeed better than the other algorithms when the experiment ended.
+
+Although this experimental study compares g-SODA's performance against four popular metaheuristic simulation-based optimization algorithms, it may be useful to compare g-SODA's performance to methods that solve the same problem using techniques that typically extract the mathematical structure of the problem using black box simulations and utilize this structure to perform deterministic approximations. 
+Such a comparison may result in a better understanding of how g-SODA performs against similar but known to be less efficient approaches than g-SODA. 
+But such a comparative study is outside the scope of this paper and we defer this study to our future work.
+
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+
+This paper presents an efficient stochastic optimization algorithm called g-SODA for the problem of finding process controls of a steady-state production processes that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
+This algorithm is based on performing (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods.  
+Such an algorithm can be easily incorporated into any DSS (e.g., see the system in \cite{Brodsky2017ieeebd}) to provide an integrated and seamless support for decision makers such as production engineers to solve the one-stage stochastic optimization problem considered here.
+
+This paper also demonstrates g-SODA on a use case of a real-world Heat Sink production and  conducts an experimental study that shows that g-SODA significantly outperforms four popular simulation-based stochastic optimization algorithms. In particular, the study shows that SODA performs better than the best competing algorithm by 48\% after one day and by 25\% after three days.
+
+Future research directions include: (a) dynamically executing the inflate deflate phase and candidate refinement phase of g-SODA to improve the exploration of the search space; and (b) comparing g-SODA with an existing stochastic optimization algorithm based on deterministic approximations.
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
