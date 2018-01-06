@@ -148,7 +148,7 @@ The rest of this paper is organized as follows. Section \ref{sec:prob} formally 
 
 We now borrow the stochastic optimization problem from \cite{GMU-CS-TR-2017-3} and extend it for  processes that have feasibility constraints over multiple stochastic metrics and are described using non-linear arithmetic.
 The stochastic optimization problem for such processes assumes a stochastic closed-form arithmetic (SCFA) simulation of the following form.
-A SCFA simulation on input variable $\vec{X}$ is a sequence $y_1=expr_1,\dots,y_n=expr_n$
+A SCFA simulation on input variable $\vec{X}$ is a sequence $(y_1=expr_1),\dots,(y_n=expr_n)$
 \newline where $expr_i, 1\le i \le n$ is either
 \begin{enumerate}[label=(\alph*)]
 	\item An arithmetic or boolean expression in terms of a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$. We say that $y_i$ is arithmetic or boolean if $expr_i$ is arithmetic or boolean correspondingly.
