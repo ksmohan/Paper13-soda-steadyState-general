@@ -76,7 +76,7 @@ This work was partially supported by NIST Grant No. 70NANB12H277. \newline
 
 
 \begin{abstract}{\small\noindent
-We consider processes with metrics of interest, including process cost, that are stochasticfeasibility constraints and metrics of interest that includes a cost function where the metrics are stochastic functions of the process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
+We consider processes with feasibility constraints and metrics of interest, including process cost, that are stochastic functions of process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.
 }
 \end{abstract}
 
@@ -91,25 +91,26 @@ We consider processes with metrics of interest, including process cost, that are
 \section{Introduction}
 
 %Motivation
-This paper considers a process with feasibility constraints and metrics of interest that includes a cost function where the metrics are stochastic functions of the process controls.
-This paper is concerned with the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability.
-These problems are prevalent in manufacturing processes, such as assembly lines and supply chain management where the goal is to find the process controls that minimize the expected cost subject to satisfying deterministic control bound constraints and stochastic steady state demand for the multiple output products with a given high probability. 
-There is an increasing need for process analysis and optimization to solve this problem efficiently as companies want to be competitive and need to reduce their cost and improve efficiency of operations in the face of increased global competition. 
+
+In this paper we consider processes with feasibility constraints and metrics of interest, including  process cost, that are stochastic functions of process controls.
+We focus on the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
+These problems are prevalent in many domains including manufacturing, supply chain management, energy and power. 
+There is an increasing need to solve this problem efficiently as companies want to be competitive and need to reduce their cost and improve efficiency of operations in the face of increased global competition. 
 
 
 %Research Gap
 %Current state of the art and its limitations (funnel)
 %%high level 
 %Simulation based approaches
-Stochastic optimization have typically been performed using simulation-based optimization techniques (see \cite{Amaran2016} and \cite{Nguyen2014} for a review of such techniques). 
-Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica \cite{elmqvist1998modelica,Provan2012modelica} allow users to run stochastic simulations on models of complex systems in mechanical, hydraulic, thermal, control, and electrical power.
-Tools like OMOptim \cite{OMOptim}, Efficient Traceable Model-Based Dynamic Optimization (EDOp) \cite{EDOp}, and jMetal \cite{jMetal} use simulation models to heuristically-guide a trial and error search for the optimal answer. 
+Stochastic optimization has typically been performed using simulation-based optimization techniques (see \cite{Amaran2016} and \cite{Nguyen2014} for a review of such techniques). 
+Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica \cite{elmqvist1998modelica,Provan2012modelica} allow users to run stochastic simulations on models of complex mechanical, hydraulic, thermal, control, and electrical power systems.
+Tools like OMOptim \cite{OMOptim}, Efficient Traceable Model-Based Dynamic Optimization (EDOp) \cite{EDOp}, and jMetal \cite{jMetal} use simulation models to heuristically-guide a trial and error search for an optimization solution.
 However, the general limitation of simulation-based approaches is that simulation is used as a black box, and the underlying mathematical structure is not utilized. 
 
 
 %NP
 
-From the work on Mathematical Programming (MP), we know that, for deterministic problems, utilizing the mathematical structure can lead to significantly better results in terms of optimality of results and computational complexity compared to simulation-based approaches (see e.g., \cite{Amaran2016} and \cite{Klemmt2009}). 
+From the work on Mathematical Programming (MP) we know that, for deterministic problems, utilizing the mathematical structure can lead to significantly better results in terms of optimality of results and computational complexity compared to simulation-based approaches (see e.g., \cite{Amaran2016} and \cite{Klemmt2009}). 
 For this reason, a number of approaches have been developed to bridge the gap between stochastic simulation and MP.
 %key things that they do
 For instance, \cite{thompson_integrated_1990} propose an integrated approach that combines simulation with MP where the MP problem is constructed from the original stochastic problem with uncertainties being resolved to their mean values by using a sample of black-box simulations. This strategy of extracting an MP from the original problem is also used by \cite{paraskevopoulos_robust_1991} to solve the optimal capacity planning problem by incorporating the original objective function augmented with a penalty on the sensitivity of the objective function to various types of uncertainty.
@@ -120,13 +121,13 @@ Other stochastic optimization approaches in the literature try to extract the ma
 However, extraction of the mathematical structure through sampling using a black-box simulation is computationally expensive, especially for real-world processes composed of complex process networks.
 
 %NP
-Instead of extracting the mathematical structure using black-box simulation, in \cite{Krishnamoorthy2015}, we used the extraction of mathematical structure from a white-box simulation code analysis as part of a heuristic algorithm to solve a stochastic optimization problem of finding controls for temporal production processes with inventories as to minimize the total cost while satisfying the stochastic demand with a predefined probability.
-Similar to the  previous approaches, the mathematical structure was used for approximating a candidate set of solutions by solving a series of deterministic MP problems that approximate the stochastic simulation. 
+Instead of extracting the mathematical structure using black-box simulation, in \cite{Krishnamoorthy2015}, we used the extraction of mathematical structure from a white-box simulation code analysis as part of a heuristic algorithm to solve a stochastic optimization problem of finding controls for temporal production processes with inventories to minimize the total cost while satisfying the stochastic demand with a predefined probability.
+Similar to the  previous approaches, the mathematical structure was used to approximate a candidate set of solutions by solving a series of deterministic MP problems that approximate the stochastic simulation. 
 However, the class of problems considered in \cite{Krishnamoorthy2015} is limited to processes described using piece-wise linear arithmetic. 
 Whereas, many processes have models based on physics-based equations with non-linear arithmetic. 
 
-To close this gap, we extended the heuristic algorithm from \cite{Krishnamoorthy2015} to an algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the stochastic optimization problem over a composite service network that involve processes described using non-linear arithmetic \cite{GMU-CS-TR-2017-3}.
-However, SODA was limited to production processes with stochastic metrics of cost and throughput and the only stochastic constraint considered in the optimization problem was that of demand satisfaction with sufficient probability. Whereas, many processes have multiple stochastic metrics and the stochastic optimization problem needs to consider the satisfaction of multiple constraints over these stochastic metrics with sufficient probability. 
+To close this gap, we extended the heuristic algorithm from \cite{Krishnamoorthy2015} to an algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the stochastic optimization problem over a composite service network that involves processes described using non-linear arithmetic \cite{GMU-CS-TR-2017-3}.
+However, SODA was limited to production processes with stochastic metrics of cost and throughput and the only stochastic constraint considered in the optimization problem was that of demand satisfaction with sufficient probability. Many processes have multiple stochastic metrics and the stochastic optimization problem needs to consider the satisfaction of multiple constraints over these stochastic metrics with sufficient probability. 
 Hence, in this paper, we generalize SODA to close the gap for stochastic optimization of processes that have feasibility constraints over multiple stochastic metrics while being described using non-linear arithmetic.
 
 %Key contibutions
@@ -134,10 +135,9 @@ More specifically, the contributions of this paper are two-fold:
 First, we propose a heuristic algorithm called general Stochastic Optimization Algorithm based on Deterministic Approximations (g-SODA) to solve the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
 The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the production process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods (e.g., see \cite{Chen2011}, \cite{Lee2012OCBACO}).  
 %Second, we demonstrate the proposed algorithm on a use case of a real-world heat-sink production process that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining with models from the literature that use non-linear physics-based equations.
-Second, we conduct an initial experimental study over a real world use case of heat-sink service network to compare the proposed algorithm with four popular simulation-based stochastic optimization algorithms viz., Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
+Second, we conduct an initial experimental study over a real world use case of a heat-sink service network to compare the proposed algorithm with four popular simulation-based stochastic optimization algorithms viz., Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
  The experimental study demonstrates that g-SODA significantly outperforms the other algorithms in terms of optimality of results and computation time. In particular, 
-running over a 12-process problem with 22 decision variables and 21 stochastic constraints using a 8-core server with 16GB RAM,
-in one day, g-SODA achieves a production cost lower than that of competing algorithms by 42\%; and in three days, g-SODA achieves 25\% better cost.
+running over a 12-process problem with 22 decision variables and 21 stochastic constraints using a 8-core server with 16GB RAM, g-SODA achieves a production cost lower than that of competing algorithms by 42\% in one day; and 25\% better cost in three days.
 
 %Organization
 The rest of this paper is organized as follows. Section \ref{sec:prob} formally describes the stochastic optimization problem over processes with multiple stochastic feasibility constraints. The algorithm for g-SODA, including deterministic approximations, is presented in section \ref{sec:algo}. Section \ref{sec:expResults} describes the experimental study to evaluate g-SODA's performance. Finally, section \ref{sec:conclusion} concludes with some future research directions. 
@@ -151,8 +151,8 @@ The stochastic optimization problem for such processes assumes a stochastic clos
 A SCFA simulation on input variable $\vec{X}$ is a sequence $y_1=expr_1,\dots,y_n=expr_n$
 \newline where $expr_i, 1\le i \le n$ is either
 \begin{enumerate}[label=(\alph*)]
-	\item An arithmetic or boolean expression in terms of a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$. We say that $y_i$ is arithmetic or boolean if the $expr_i$ is arithmetic or boolean correspondingly.
-	\item An expression invoking $PD(\vec{P})$, which is a function that draws from a probability distribution (e.g., gaussian, exponential, uniform) using parameters $\vec{P}$ that are a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$.
+	\item An arithmetic or boolean expression in terms of a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$. We say that $y_i$ is arithmetic or boolean if $expr_i$ is arithmetic or boolean correspondingly.
+	\item An expression invoking $PD(\vec{P})$, which is a function that draws from a probability distribution (e.g., Gaussian, exponential, uniform) using parameters $\vec{P}$ that are a subset of the elements of $\vec{X}$ and/or $y_1,\dots,y_{i-1}$.
 \end{enumerate}
 %y_i is deterministic or stochastic
 We say that $y_i, 1\le i \le n$ is stochastic if, recursively,
@@ -176,7 +176,7 @@ In this example, the SCFA simulation computes the stochastic arithmetic variable
 The variable \textit{speed} is deterministic (e.g., machine speed) and it should be bounded within some lower bound (\textit{lb}) and upper bound (\textit{ub}).
 The boolean variable \textit{C} describes whether \textit{speed} is bounded.
 Also, the effects of \textit{speed} is stochastic (\textit{stochSpeed}) due to normally distributed random noise $\mathcal{N}(0,\sigma)$. 
-For the sake of brevity, say that the stochastic time to produce one item (\textit{stochTime}) is obtained from a function described in terms of \textit{stochSpeed}.
+For the sake of simplicity, assume that the stochastic time to produce one item (\textit{stochTime}) is obtained from a function described in terms of \textit{stochSpeed}.
 Then, \textit{throughput} is computed as the inverse of \textit{stochTime} and \textit{cost} is computed as the product of \textit{throughput} and a fixed parameter of price to produce one unit of item (\textit{pricePerUnit}).
 
 %Our problem (with C, cost, thru)
@@ -197,9 +197,9 @@ where $\vec{D} = D_1 \times \dots \times D_n$ is the domain for decision variabl
 \indent\indent\indent\textit{cost}$(\vec{X})$ is a random variable defined in terms of $\vec{X}$\\
 \indent\indent\indent$C(\vec{X})$ is a deterministic constraint in $\vec{X}$ i.e., a function $C:\vec{D} \rightarrow \{true,false\}$\\
 %\indent\indent\indent$\mathcal{M}$  is a set of random variables, all defined in terms of $\vec{X}$ and $m_k(\vec{X}) \in \mathcal{M}$\\
-\indent\indent\indent $m_1(\vec{X}),\dots,m_k(\vec{X})$ are random variable defined in terms of $\vec{X}$\\
+\indent\indent\indent $m_1(\vec{X}),\dots,m_k(\vec{X})$ are random variables defined in terms of $\vec{X}$\\
 \indent\indent\indent$\theta_1,\dots,\theta_k \in \mathbb{R}^k$ are the constraint thresholds \\
-\indent\indent\indent$\alpha_1,\dots,\alpha_k \in [0,1]^k$ are the probability threshold, and\\
+\indent\indent\indent$\alpha_1,\dots,\alpha_k \in [0,1]^k$ are the probability thresholds, and\\
 \indent\indent\indent$P(m_i(\vec{X}) \ge \theta_i)$ is the probability that $m_i(\vec{X})$ is greater than or equal to $\theta_i$, and\\\indent\indent\indent\indent\indent\indent\indent~$i\in\{1,\dots,k\}$
 
 Note in this problem that upon increasing $\theta_i$ to some $\theta_i'$ where $i\in\{1,\dots,k\}$, the size of the space of alternatives that satisfy the respective stochastic constraint in equation \ref{eq:stochProb} increases and hence it can be said that the best solution, i.e., the minimum expected cost is monotonically improving in $\theta_i'$.
@@ -267,7 +267,7 @@ But such an approach is inefficient because the stochastic space of this problem
 So, the key idea of g-SODA is that instead of working with a large number of choices in the stochastic space, we use deterministic approximations to generate a small set of candidate control settings and then validate these control settings in the stochastic space using simulations.
 
 
-\begin{figure}
+\begin{figure}[t]
 	\includegraphics[width=\textwidth]{images/Algo_Full.pdf}
 	\caption{Overview of g-SODA}
 	\label{fig:algoOverview}       % Give a unique label
@@ -288,7 +288,7 @@ So, the key idea of g-SODA is that instead of working with a large number of cho
 
 An overview of g-SODA is shown in Fig. \ref{fig:algoOverview} and a corresponding pseudo code is given in \algoSODAm.~To generate a small set of candidate control settings, g-SODA performs deterministic approximations of the original stochastic problem. 
 g-SODA achieves this by defining a deterministic computation $\mathbb{S}_0$ from the SCFA simulation $\mathbb{S}$ described in section \ref{sec:prob} by replacing every expression that uses a probability distribution $PD(\vec{P})$ with the expectation of that distribution. 
-Thus the deterministic approximations \textit{cost$_0$}$(\vec{X})$, $m_{0,1}(\vec{X}),\dots,m_{0,k}(\vec{X})$ of \textit{cost}$(\vec{X})$, $m_1(\vec{X}),\dots,m_k(\vec{X})$, respectively can be expressed using $\mathbb{S}_0$.
+Thus, the deterministic approximations \textit{cost$_0$}$(\vec{X})$, $m_{0,1}(\vec{X}),\dots,m_{0,k}(\vec{X})$ of \textit{cost}$(\vec{X})$, $m_1(\vec{X}),\dots,m_k(\vec{X})$, respectively can be expressed using $\mathbb{S}_0$.
 To optimize this reduced problem, a deterministic optimization problem that approximates the stochastic optimization problem shown in equation \ref{eq:stochProb} is used as a heuristic. This deterministic optimization problem can be described as follows:
 \begin{equation}
 \label{eq:detApprox}
@@ -311,7 +311,7 @@ where $\theta_1{'} \ge \theta_1,\dots,\theta_k{'} \ge \theta_k$ are conservative
 This deterministic approximation is performed iteratively such that the control settings found in the current iteration are more likely to satisfy the stochastic constraints with the desired probability than in the previous iterations. This is possible because of the \textit{inflate} phase (left box of Fig. \ref{fig:algoOverview}) and the \textit{deflate} phase (middle box of Fig. \ref{fig:algoOverview}) of g-SODA. 
 
 The \textit{inflate} phase is intuitively trying to increase the bounds to satisfy the stochastic constraints with the desired probability. 
-When the current candidate control settings do not generate any metric that satisfies its respective user-defined bound with a desired probability, this bound parameter itself is artificially inflated as a function of the number of standard deviations required so that the metric satisfies the bound with desired probability.
+When the current candidate control settings do not generate any metric that satisfies its respective user-defined bound with a desired probability, this bound parameter is artificially inflated as a function of the number of standard deviations required so that the metric satisfies the bound with desired probability.
 This inflation very quickly yields metrics that satisfy its respective user-defined bound. However, this may result in the metric overshooting the bound, which degrades the objective cost. 
 
 To overcome this, in the \textit{deflate} phase, g-SODA scales the inflated bounds back by calculating the discrete points for all bounds between when the constraint was satisfied with sufficient probability and when the last inflation occurred.
@@ -321,7 +321,7 @@ To overcome this, in the \textit{deflate} phase, g-SODA scales the inflated boun
 After the iterative \textit{inflate} and \textit{deflate} procedure, more simulations may be needed to check if a promising candidate that currently is not a top candidate could be the optimal solution or to choose an optimal solution from multiple candidates. 
 To resolve this, these candidates are further refined in the \textit{refineCandidates} phase (right box in Fig. \ref{fig:algoOverview}) where a number of simulations are allocated to each candidate as obtained from an optimal simulation budget allocation method. These simulations are run on these candidates to check if this produces a new optimal solution.
 
-In this way, g-SODA uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of g-SODA are explained in greater detail with the help of their pseudo-code in the subsections below.
+In this way, g-SODA uses model knowledge from the white box simulation code in \textit{inflate}, and \textit{deflate} phases, and optimal simulation budget allocation in the \textit{refineCandidates} phase to provide optimal control settings of the non-linear processes with multiple stochastic constraints that a process operator can use on the manufacturing floor in a stochastic environment. The phases of g-SODA are explained in greater detail with the help of their pseudo-code in the subsections below.
 
 \subsection{Inflate and Deflate Phase}
 \label{ssec:inflDefl}
@@ -339,20 +339,20 @@ In this way, g-SODA uses model knowledge from the white box simulation code in \
 \end{minipage}
 \end{figure*}
 
-The pseudo-code for the \textit{InflateDeflate} procedure is shown in \algoInflDefl~and it iteratively calls \textit{PerformInflations} and \textit{PerformDeflations} to perform deterministic approximation by inflating and deflating the bound parameters for a user defined budget or until there is no improvement in the objective cost ($\hat{O}.m$) for a certain number of iterations. The uniqueness of this procedure is that it is iterative and hence not only will the inflated bounds that satisfied the constraints with sufficient probability be the starting point for deflation but the bounds at which the deflation fails to satisfy any constraint with sufficient probability will be used to inflate from, thus yielding optimal solutions very early in the running of g-SODA.
+The pseudo-code for the \textit{InflateDeflate} procedure is shown in \algoInflDefl~and it iteratively calls \textit{PerformInflations} and \textit{PerformDeflations} to perform a deterministic approximation by inflating and deflating the bound parameters for a user defined budget or until there is no improvement in the objective cost ($\hat{O}.m$) for a certain number of iterations. The uniqueness of this procedure is that it is iterative and hence not only will the inflated bounds that satisfied the constraints with sufficient probability be the starting point for deflation but the bounds at which the deflation fails to satisfy any constraint with sufficient probability will be used to inflate from, thus yielding optimal solutions very early in the running of g-SODA.
 
 The \textit{PerformInflations} procedure as shown in \algoPerfInfl~tries to iteratively find the inflated bounds for multiple constraints into $\overrightarrow{CIB}$ that can be used for deterministic approximation. The goal is that these inflated bounds will yield control settings when the problem in equation \ref{eq:detApprox} is solved and when these controls are used in the stochastic setting, the original constraints from the stochastic problem will be satisfied with sufficient probability.  
 To achieve this, the \textit{PerformInflations} procedure calls \textit{Inflate} that performs one iteration of inflation as shown in \algoInflate. 
 
 In the \textit{Inflate} procedure, first a number of candidate control settings with different objective costs are obtained by running a deterministic optimization with a constraint on the current bounds from $\overrightarrow{CIB}$ in the \textit{GenerateCandidates} procedure (\algoInflate~line 1). 
-We adopt \textit{GenerateCandidates} procedure as is from \cite{GMU-CS-TR-2017-3} where random starting point are chosen for all the decision variables since the processes considered here have non-linear objectives that may not necessarily be convex. Then, the deterministic problem with the current bounds and different starting points are solved to generate different candidates with different control setting and objective costs. More information and pseudo-code of this procedure can be found in \cite{GMU-CS-TR-2017-3}.
+We adopt the \textit{GenerateCandidates} procedure as is from \cite{GMU-CS-TR-2017-3} where random starting point are chosen for all the decision variables since the processes considered here have non-linear objectives that may not necessarily be convex. Then, the deterministic problem with the current bounds and different starting points are solved to generate different candidates with different control setting and objective costs. More information and pseudo-code of this procedure can be found in \cite{GMU-CS-TR-2017-3}.
 
 
 The \textit{PerformInflations} procedure then calls the \textit{PerformStochasticSimulations} procedure as shown in \algoStochSim~that runs stochastic simulations on the candidate that yielded the least cost among the generated candidates and calculates the confidence of satisfaction of all the constraints as well as a verdict for this candidate that is returned back through the \textit{result} variable (\algoInflate~line 2). The \textit{result} variable can be \textit{accept}, when the probability of satisfaction of all the stochastic constraints are sufficiently high, \textit{reject}, when the probability of satisfaction of at least one of the stochastic constraint is not sufficiently high, and \textit{not-reject}, when \textit{accept} or \textit{reject} could not be decided for the number of simulations performed.
 
-For all the constraints where the probability of satisfaction of the stochastic constraint is not sufficiently high, a new inflated bound is computed as a function of number of standard deviations required to satisfy the constraint with desired probability. The assumption here is that the population is normally distributed and the standard deviation remains approximately the same for the current bound and the inflated bound. Hence the inflated bound for the constraint is calculated by rearranging the terms in one-sample t-test (\algoInflate~lines 4-14). 
+For all the constraints where the probability of satisfaction of the stochastic constraint is not sufficiently high, a new inflated bound is computed as a function of the number of standard deviations required to satisfy the constraint with desired probability. The assumption here is that the population is normally distributed and the standard deviation remains approximately the same for the current bound and the inflated bound. Hence the inflated bound for the constraint is calculated by rearranging the terms in one-sample t-test (\algoInflate~lines 4-14). 
 Finally, the \textit{result} variable, the new bounds ($\overrightarrow{NIB}$) and the generated candidates from the current iteration are returned from the \textit{Inflate} procedure (line 15). 
-This returned information is then used in the \textit{PerformInflations} procedure to store the candidates and update the objective cost (\algoPerfInfl~lines 4-11). This inflation process continues until the new bounds calculated by the \textit{Inflate} procedure yields a \textit{result} of \textit{accept} when inflation of the bound parameters is no longer necessary (line 12-16).
+This returned information is then used in the \textit{PerformInflations} procedure to store the candidates and update the objective cost (\algoPerfInfl~lines 4-11). This inflation process continues until the new bounds calculated by the \textit{Inflate} procedure yields a \textit{result} of \textit{accept} when inflation of the bound parameters is no longer necessary (line 16).
 
 %Deflation
 The \textit{PerformDeflations} procedure as shown in \algoPerfDefl~tries to iteratively deflate the bounds that were inflated. These deflated bounds can be used for deterministic approximation. The goal here is that using these deflated bounds in the deterministic problem (equation \ref{eq:detApprox}) will yield control settings that will not only satisfy the original constraints from the stochastic problem with sufficient probability but do so with a better objective cost.  
@@ -360,7 +360,7 @@ To achieve this, the \textit{PerformDeflations} procedure calls the \textit{Defl
 In the \textit{Deflate} procedure, similar to the \textit{Inflate} procedure, the candidates are generated using the current bounds from $\overrightarrow{CIB}$ and stochastic simulations are run on these candidates to calculate the confidence of satisfaction of all the constraints and a verdict for the candidate in the \textit{result} variable (\algoDeflate~lines 1-2). 
 If the \textit{result} is \textit{accept} the interval between the current bound and the bound at which the last inflation occurred is divided by a constant amount from $\vec{\beta}$ (lines 4-13). 
 Finally, the \textit{result} variable, the new bounds ($\overrightarrow{NIB}$) and the generated candidates from the current iteration are returned from the \textit{Deflate} procedure (line 14). 
-This returned inormation is then used in the \textit{PerformedDeflations} procedure to store the candidates and update the objective cost (\algoPerfDefl~lines 3-9). This deflation process continues until the new bounds calculated by the \textit{Deflate} procedure yields a \textit{result} of \textit{reject} when deflation of bounds is no longer useful to  generate better candidates (line 12-13).
+This returned information is then used in the \textit{PerformedDeflations} procedure to store the candidates and update the objective cost (\algoPerfDefl~lines 3-9). This deflation process continues until the new bounds calculated by the \textit{Deflate} procedure yields a \textit{result} of \textit{reject} when deflation of bounds is no longer useful to  generate better candidates (line 12-13).
 
 
 
@@ -436,12 +436,12 @@ To conduct the experimental study, first the SCFA simulation of HSPP is written 
 For the comparison algorithms, we used the jMetal package, which is an object-oriented Java-based framework for multi-objective optimization with metaheuristics \cite{jMetal}. The algorithms chosen for comparison include Nondominated Sorting Genetic Algorithm 2 (NGSA2) \cite{ngsa2}, Indicator Based Evolutionary Algorithm (IBEA) \cite{ibea}, Strength Pareto Evolutionary Algorithm 2 (SPEA2) \cite{spea2}, and Speed-constrained Multi-objective Particle swarm optimization (SMPSO) \cite{NDG09}.
 All these algorithms use the SCFA of HSPP to perform the computation of the cost and other stochastic metrics as well as the feasibility constraints. The cost and constraint satisfaction information is then used by the jMetal algorithms to further increase or decrease the control settings using heuristics.
 
-We ran g-SODA was in two different settings. 
+We ran g-SODA in two different settings. 
 In the first setting, g-SODA was run for one day with 5,000 iterations of \textit{InflateDeflate}. In the second setting, g-SODA was run for approximately 72 hours (three days) with 10,000 iterations of \textit{InflateDeflate}. There were 22 decision variables and 21 stochastic constraints in the stochastic optimization problem over HSPP. The probability bound and the confidence bound for all stochastic constraints were set to 0.95 and 99\% respectively. Additionally, all production processes in HSPP were stochastic due to noise added to their controls. This noise has a mean of 0 and standard deviation between 1.8 to 2.8. 
-Finally, the demand for aluminum plate, finished Heat Sink, and Heat Sink Base were set to 8, 4, and 6 respectively.
+Finally, the demand for aluminum plate, finished Heat Sink, and Heat Sink Base were set to 8, 4, and 6 completed products respectively.
 The comparison algorithms were also run with the same (relevant) parameters.
 
-\begin{figure}
+\begin{figure}[b]
 	\begin{minipage}{.5\textwidth}
 	\begin{center}
 	\includegraphics[width=\textwidth]{images/sodavsjmetal1day.pdf}
