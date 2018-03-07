@@ -271,12 +271,8 @@ This stochastic optimization problem can be solved using simulation-based optimi
 But such an approach is inefficient because the stochastic space of this problem is very large and hence this approach will typically converge very slowly to the optimum solution.
 So, the key idea of g-SODA is that instead of working with a large number of choices in the stochastic space, we use deterministic approximations to generate a small set of candidate control settings and then validate these control settings in the stochastic space using simulations.
 
+\textbf{[Figure \ref{fig:algoOverview} near here]}
 
-\begin{figure}[t]
-	\includegraphics[width=\textwidth]{images/Algo_Full.pdf}
-	\caption{Overview of g-SODA}
-	\label{fig:algoOverview}       % Give a unique label
-\end{figure}
 
 
 \newcommand{\algoSODAm}{Algorithm 1}
@@ -363,6 +359,27 @@ For all the constraints where the probability of satisfaction of the stochastic 
 Finally, the \textit{result} variable, the new bounds ($\overrightarrow{NIB}$) and the generated candidates from the current iteration are returned from the \textit{Inflate} procedure (line 15). 
 This returned information is then used in the \textit{PerformInflations} procedure to store the candidates and update the objective cost (\algoPerfInfl~lines 4-11). This inflation process continues until the new bounds calculated by the \textit{Inflate} procedure yields a \textit{result} of \textit{accept} when inflation of the bound parameters is no longer necessary (line 16).
 
+\begin{figure*}
+	\begin{minipage}{\textwidth}
+		\begin{center}
+			\includegraphics[width=.85\textwidth]{pseudoCode/Algo7.pdf}
+		\end{center}
+	\end{minipage}
+	\vspace{1em} % add some whitespace after the first figure
+	
+	\begin{minipage}[b]{0.48\textwidth}
+		\begin{center}
+			\includegraphics[width=1\textwidth]{pseudoCode/Algo8.pdf}
+		\end{center}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.51\textwidth}
+		\begin{center}
+			\includegraphics[width=1\textwidth]{pseudoCode/Algo9.pdf}
+		\end{center}
+	\end{minipage}
+\end{figure*}
+
 %Deflation
 The \textit{PerformDeflations} procedure as shown in \algoPerfDefl~tries to iteratively deflate the bounds that were inflated. These deflated bounds can be used for deterministic approximation. The goal here is that using these deflated bounds in the deterministic problem (equation \ref{eq:detApprox}) will yield control settings that will not only satisfy the original constraints from the stochastic problem with sufficient probability but do so with a better objective cost.  
 To achieve this, the \textit{PerformDeflations} procedure calls the \textit{Deflate} procedure that performs one iteration of deflation as shown in \algoDeflate. 
@@ -378,30 +395,10 @@ This returned information is then used in the \textit{PerformedDeflations} proce
 \subsection{Candidate Refinement Phase}
 \label{ssec:refineCand}
 
-\begin{figure*}
-	\begin{minipage}{\textwidth}
-		\begin{center}
-		\includegraphics[width=.85\textwidth]{pseudoCode/Algo7.pdf}
-	\end{center}
-	\end{minipage}
-	\vspace{1em} % add some whitespace after the first figure
-	
-	\begin{minipage}[b]{0.48\textwidth}
-		\begin{center}
-		\includegraphics[width=1\textwidth]{pseudoCode/Algo8.pdf}
-	\end{center}
-	\end{minipage}
-	\hfill
-	\begin{minipage}[b]{0.51\textwidth}
-		\begin{center}
-		\includegraphics[width=1\textwidth]{pseudoCode/Algo9.pdf}
-	\end{center}
-	\end{minipage}
-\end{figure*}
-
 After generating the candidate sets using deterministic approximations, g-SODA refines these candidates by running Monte Carlo simulations on them in this phase. 
 To maximize the likelihood of selecting the best candidate, i.e., candidate with the least cost and sufficient probability of satisfaction of all constraints, this phase uses the Optimal Computing Budget Allocation method for Constraint Optimization (OCBA-CO) \cite{Lee2012OCBACO} to allocate some delta budget among the candidates so that the greatest fraction of the budget is allocated to the most promising candidates in the candidate set. In each iteration of this phase, the allocated simulation budget is run on the candidates.
 In each subsequent iteration, OCBA-CO can use the updated estimates to find new promising candidates and allocate a greater fraction of the delta budget to them to check if these candidates can be further refined.
+
 
 The pseudo-code for the \textit{RefineCandidates} procedure is given in \algoRefineCand. 
 In this procedure, first, simulations are run on any candidates for which there are no base statistics, i.e, candidates on which simulations was not run in the inflate and deflate phase. Those candidates that return the result of \textit{accept} and whose objective cost is statistically better than the best objective cost so far are stored for further consideration (\algoRefineCand~lines 1-2).
@@ -422,13 +419,8 @@ More details about the OCBA-CO algorithm can be obtained from \cite{Lee2012OCBAC
 \section{Experimental Study}
 \label{sec:expResults}
 
-\begin{figure}[b]
-	\begin{center}
-		\includegraphics[width=0.7\textwidth]{images/HeatSink_contractSN.pdf}
-		\caption{Graphical representation of the Heat-Sink Production Process (HSPP)}
-		\label{fig:heatsinkSC}       % Give a unique label
-	\end{center}
-\end{figure}
+\textbf{[Figure \ref{fig:heatsinkSC} near here]}
+
 
 This section describes the experimental study that was conducted to evaluate g-SODA in terms of its quality of objective cost and rate of convergence as compared to four metaheuristic simulation-based optimization algorithms. 
 In this study, a real-world use-case of the Heat Sink Production Process (HSPP) is considered.
@@ -448,24 +440,8 @@ In the first setting, g-SODA was run for one day with 5,000 iterations of \texti
 Finally, the demand for aluminum plate, finished Heat Sink, and Heat Sink Base were set to 8, 4, and 6 completed products respectively.
 The comparison algorithms were also run with the same (relevant) parameters.
 
-\begin{figure}[t]
-	\begin{minipage}{.5\textwidth}
-	\begin{center}
-	\includegraphics[width=\textwidth]{images/sodavsjmetal1day.pdf}
-	\caption{Estimated average cost for the elapsed time (max runtime = one day) (x-axis in normal scale}
-	\label{fig:GraphsForTime_24hours}       % Give a unique label
-\end{center}
-\end{minipage}
-%	\vspace{.5em} % add some whitespace after the first figure
-\hfill
-\begin{minipage}{.5\textwidth}
-	\begin{center}
-	\includegraphics[width=\textwidth]{images/sodavsjmetal3day.pdf}
-	\caption{Estimated average cost for the elapsed time (max runtime = three days) (x-axis in log-scale)}
-	\label{fig:GraphsForTime_3days}       % Give a unique label
-\end{center}
-\end{minipage}
-\end{figure}
+\textbf{[Figure \ref{fig:GraphsForTime_24hours} and Figure \ref{fig:GraphsForTime_3days} near here]}
+
 
 %SODA vs JMetal
 The data collected from the experiments include the estimated average costs achieved at different elapsed time points for g-SODA in the two settings and all the comparison algorithms. 
@@ -501,6 +477,39 @@ Finally, it would be interesting to research on whether evolutionary and other m
 
 \bibliographystyle{apacite} 
 \bibliography{Ref}
+
+\begin{figure}[h!]
+	\includegraphics[width=\textwidth]{images/Algo_Full.pdf}
+	\caption{Overview of g-SODA}
+	\label{fig:algoOverview}       % Give a unique label
+\end{figure}
+
+\begin{figure}[b]
+	\begin{center}
+		\includegraphics[width=0.7\textwidth]{images/HeatSink_contractSN.pdf}
+		\caption{Graphical representation of the Heat-Sink Production Process (HSPP)}
+		\label{fig:heatsinkSC}       % Give a unique label
+	\end{center}
+\end{figure}
+
+\begin{figure}[t]
+	\begin{minipage}{.5\textwidth}
+		\begin{center}
+			\includegraphics[width=\textwidth]{images/sodavsjmetal1day.pdf}
+			\caption{Estimated average cost for the elapsed time (max runtime = one day) (x-axis in normal scale}
+			\label{fig:GraphsForTime_24hours}       % Give a unique label
+		\end{center}
+	\end{minipage}
+	%	\vspace{.5em} % add some whitespace after the first figure
+	\hfill
+	\begin{minipage}{.5\textwidth}
+		\begin{center}
+			\includegraphics[width=\textwidth]{images/sodavsjmetal3day.pdf}
+			\caption{Estimated average cost for the elapsed time (max runtime = three days) (x-axis in log-scale)}
+			\label{fig:GraphsForTime_3days}       % Give a unique label
+		\end{center}
+	\end{minipage}
+\end{figure}
 
 %----------------------------------------------------------------------------------------
 
