@@ -1,10 +1,13 @@
 \documentclass[a4paper, 12pt]{article} % Font size (can be 10pt, 11pt or 12pt) and paper size (remove a4paper for US letter paper)
 
+%\usepackage[none]{hyphenat} % remove hyphen
+
 \usepackage{graphicx} % Required for including pictures
 \usepackage{apacite}
+\usepackage{setspace}
 \usepackage{sectsty}
 \usepackage{breakcites}
-\usepackage[margin=1in]{geometry}
+\usepackage[left=1.18in,right=1.18in,top=0.98in,bottom=0.98in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{newtxmath,newtxtext}
  \usepackage{enumitem}
@@ -14,6 +17,7 @@
    	mathescape
    }
  \usepackage{xcolor}
+\linespread{1.5}
 
   \newcommand\mycomment[1]{\textcolor{red}{\textbf{\textit{(#1)}}}}
  \newcommand\mycommentn[1]{\textcolor{red}{\textbf{\textit{#1}}}\newline}
@@ -88,8 +92,8 @@ heuristic algorithm
 
 %{\small  } % Keywords
 
-\vspace{5pt} % Some vertical space between the abstract and first section
-
+%\vspace{2pt} % Some vertical space between the abstract and first section
+\setstretch{2.0}
 \section{Introduction}
 
 %Motivation
@@ -469,8 +473,9 @@ Future research direction include dynamically executing the inflate deflate phas
 Another future work is to compare g-SODA's performance to methods and algorithms including Bayesian optimization that solve the same problem using techniques that typically extract the mathematical structure of the problem using black box simulations. Such a comparison may result in a better understanding of how g-SODA performs against similar but known to be less efficient approaches than g-SODA.
 Finally, it would be interesting to research on whether evolutionary and other metaheuristic algorithms can be leveraged to improve the selection and refinement of the candidates collected in the \textit{InflateDeflate} phase.
 
-%\section*{Acknowledgement}
-%This work was partially supported by National Institute of Standard and Technology [grant number 70NANB12H277].
+\setstretch{1.5}
+\section*{Acknowledgement}
+This work was partially supported by National Institute of Standard and Technology [grant number 70NANB12H277].
 %----------------------------------------------------------------------------------------
 %	BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
