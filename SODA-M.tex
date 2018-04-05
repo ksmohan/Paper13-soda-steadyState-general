@@ -81,7 +81,16 @@ This work was partially supported by National Institute of Standard and Technolo
 \renewcommand{\abstractname}{}
 \begin{abstract}
 {\noindent\small
-We consider processes with feasibility constraints and metrics of interest, including process cost, that are stochastic functions of process controls. We propose an efficient stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. The proposed algorithm is based on (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods. In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows that the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.\\ \\
+%We consider processes with feasibility constraints and metrics of interest, including process cost, that are stochastic functions of process controls. 
+We propose an efficient one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. The proposed algorithm is based on a series of deterministic approximations 
+to produce a candidate solution set
+%of near-optimal control settings for the process, 
+and on a refinement step using stochastic simulations  
+%on the candidate set using 
+with optimal simulation budget allocation. 
+We conduct an experimental study for a real-world manufacturing service network which shows that 
+%In an experimental study, we demonstrate the proposed algorithm on a use case of a real-world heat-sink service network that involves contract suppliers and manufacturers as well as unit manufacturing processes of shearing, milling, drilling, and machining. The experimental study shows 
+the proposed algorithm significantly outperforms four popular simulation-based stochastic optimization algorithms.\\ \\
 Keywords: decision support;
 decision guidance;
 deterministic approximations;
@@ -102,42 +111,48 @@ In this paper we consider processes with feasibility constraints and metrics of 
 We focus on the development of a one-stage stochastic optimization algorithm for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
 These problems are prevalent in many domains including manufacturing, supply chain management, energy and power. 
 %There is an increasing need to solve this problem efficiently as companies want to be competitive and need to reduce their cost and improve efficiency of operations in the face of increased global competition. 
-As a concrete example, consider a stochastic manufacturing service network of the heat sink production process. This network is composed of supplier, contract manufacturers, production lines, and unit manufacturing processes. In this network, a decision is to be made on the setting of all the machines in order to minimize the expected cost of operation while satisfying the demand of all products produced within the network with a given high probability. This example is described in greater detail in Section \ref{sec:expResults}.
+%As a concrete example, consider a stochastic manufacturing service network of the heat sink production process. This network is composed of supplier, contract manufacturers, production lines, and unit manufacturing processes. In this network, a decision is to be made on the setting of all the machines in order to minimize the expected cost of operation while satisfying the demand of all products produced within the network with a given high probability. This example is described in greater detail in Section \ref{sec:expResults}.
 
 %Research Gap
 %Current state of the art and its limitations (funnel)
 %%high level 
 %Simulation based approaches
-One-stage stochastic optimization are problems that have stochastic objectives or constraints and try to find an optimal decision, such as the best set controls for a statistical model given the data. The key ways to solving these problems are outlined in \cite{FIGUEIRA2014118} and \cite{JUAN201562}.
-Stochastic optimization has typically been performed using simulation-based optimization techniques 
-%(see \cite{Amaran2016} and \cite{Nguyen2014} for a review of such techniques). 
-Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica \cite{elmqvist1998modelica} allow users to run stochastic simulations on models of complex mechanical, hydraulic, thermal, control, and electrical power systems.
-Tools like OMOptim \cite{OMOptim}, Efficient Traceable Model-Based and Dynamic Optimization (EDOp) \cite{EDOp} use simulation models to heuristically-guide a trial and error search for an optimization solution.
+%One-stage stochastic optimization are problems that have stochastic objectives or constraints and try to find an optimal decision, such as the best set controls for a statistical model given the data. 
+One stage stochastic optimization have been extensively studied, e.g., see overviews \cite{FIGUEIRA2014118} and \cite{JUAN201562} which outline key techniques.
+They typically are based on simulation-based optimization, e.g., see \cite{Amaran2016} and \cite{Nguyen2014}.  
+%
+%Tools like SIMULINK \cite{Dabney:2001:MS:557989} and Modelica \cite{elmqvist1998modelica} allow users to run stochastic simulations on models of complex mechanical, hydraulic, thermal, control, and electrical power systems.
+%Tools like OMOptim \cite{OMOptim}, Efficient Traceable Model-Based and Dynamic Optimization (EDOp) \cite{EDOp} use simulation models to heuristically-guide a trial and error search for an optimization solution.
+
 However, the general limitation of simulation-based approaches is that simulation is used as a black box, and the underlying mathematical structure is not utilized. 
-
-
-%NP
-
-From the work on Mathematical Programming (MP) we know that, for deterministic problems, utilizing the mathematical structure can lead to significantly better results in terms of optimality of results and computational complexity compared to simulation-based approaches (see e.g., \cite{Amaran2016}). 
-For this reason, a number of approaches have been developed to bridge the gap between stochastic simulation and MP.
+In Mathematical Programming (MP) applied to deterministic optimization problems, utilizing the mathematical structure of the problem typically gives significantly better results in terms of optimality  and computational time compared to simulation-based approaches (e.g., see \cite{Amaran2016}). 
+For this reason, a number of approaches have been developed to bridge the gap between stochastic simulation and MP, by extracting mathematical structure through simulation.
 %key things that they do
-For instance, \cite{thompson_integrated_1990} propose an integrated approach that combines simulation with MP where the MP problem is constructed from the original stochastic problem with uncertainties being resolved to their mean values by using a sample of black-box simulations. 
-This strategy of extracting an MP from the original problem is also used by \cite{paraskevopoulos_robust_1991} to solve the optimal capacity planning problem by incorporating the original objective function augmented with a penalty on the sensitivity of the objective function to various types of uncertainty.
+For example, in \cite{thompson_integrated_1990}, random variables in a simulation are resolved to their means;
+%propose an integrated approach that combines simulation with MP where the MP problem is constructed from the original stochastic problem with uncertainties being resolved to their mean values by using a sample of black-box simulations. 
+%This strategy of extracting an MP from the original problem is also used by 
+In \cite{paraskevopoulos_robust_1991}, to solve the optimal capacity planning problem, the original objective function is augmented with a penalty on the sensitivity of the objective function to various types of uncertainty.
 %The authors of \cite{Xu2014MultiFid} propose an ordinal transformation framework, 
 %consisting of a two-stage optimization framework that first extracts a low fidelity model using simulation or a queuing network model using assumptions that simplify the original problem and then uses this model to reduce the search space over which high fidelity simulations are run to find the optimal solution to the original problem.
 %This low fidelity model is in a closed mathematical form and solving this model reduces the search space. High fidelity simulations  are then used on this smaller search space to find the optimal solutions to the original problem.
-Other stochastic optimization approaches in the literature try to extract the mathematical structure of the original problem using similar techniques.
+%Other stochastic optimization approaches in the literature try to extract the mathematical structure of the original problem using similar techniques.
 However, extraction of the mathematical structure through sampling using a black-box simulation is computationally expensive, especially for real-world processes composed of complex process networks.
 
 %NP
-Instead of extracting the mathematical structure using black-box simulation, in \cite{Krishnamoorthy2015}, we used the extraction of mathematical structure from a white-box simulation code analysis as part of a heuristic algorithm to solve a stochastic optimization problem of finding controls for temporal production processes with inventories to minimize the total cost while satisfying the stochastic demand with a predefined probability.
+Instead of extracting mathematical structure using simulation, in \cite{Krishnamoorthy2015}, we used symbolic analysis of simulation model code as part of a stochastic optimization algorithm for temporal production processes. 
+%heuristic algorithm to solve a stochastic optimization problem of finding controls for temporal production processes with inventories to minimize the total cost while satisfying the stochastic demand with a predefined probability.
 %Similar to the  previous approaches, the mathematical structure was used to approximate a candidate set of solutions by solving a series of deterministic MP problems that approximate the stochastic simulation. 
-However, the class of problems considered in \cite{Krishnamoorthy2015} is limited to processes described using piece-wise linear arithmetic. 
-Whereas, many processes have models based on physics-based equations with non-linear arithmetic. 
-
-To close this gap, we extended the heuristic algorithm from \cite{Krishnamoorthy2015} to an algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the stochastic optimization problem over a composite service network that involves processes described using non-linear arithmetic \cite{GMU-CS-TR-2017-3}.
-However, SODA was limited to production processes with stochastic metrics of cost and throughput and the only stochastic constraint considered in the optimization problem was that of demand satisfaction with sufficient probability. Many processes have multiple stochastic metrics and the stochastic optimization problem needs to consider the satisfaction of multiple constraints over these stochastic metrics with sufficient probability. 
-Hence, in this paper, we generalize SODA to close the gap for stochastic optimization of processes that have feasibility constraints over multiple stochastic metrics while being described using non-linear arithmetic.
+%However, the class of problems considered in \cite{Krishnamoorthy2015} is limited to processes described using piece-wise linear arithmetic. 
+%Whereas, many processes have models based on physics-based equations with non-linear arithmetic. 
+In \cite{GMU-CS-TR-2017-3}, we generalized the approach from 
+%To close this gap, we extended the heuristic algorithm from 
+\cite{Krishnamoorthy2015} to 
+%an algorithm called Stochastic Optimization Algorithm based on Deterministic Approximations (SODA) to solve the stochastic optimization problem over a 
+general stochastic optimization problems where both the objective and the demand constraint are stochastic, and may involve non-linear arithmetic. 
+%with service network that involves processes described using non-linear arithmetic \cite{GMU-CS-TR-2017-3}.
+However, the proposed algorithm was limited to a single, as opposed to multiple, stochastic demand constraints. Lifting this limitation is the focus of this paper.
+%production processes with stochastic metrics of cost and throughput and the only stochastic constraint considered in the optimization problem was that of demand satisfaction with sufficient probability. Many processes have multiple stochastic metrics and the stochastic optimization problem needs to consider the satisfaction of multiple constraints over these stochastic metrics with sufficient probability. 
+%In this paper, we generalize SODA to close the gap for stochastic optimization of processes that have feasibility constraints over multiple stochastic metrics while being described using non-linear arithmetic.
 
 %Key contibutions
 More specifically, the contributions of this paper are two-fold:
@@ -492,19 +507,19 @@ At the end of the experiment, the feasible solutions found by g-SODA  have much 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
-This paper presents an efficient stochastic optimization algorithm called g-SODA for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability. 
+We proposed an efficient one-stage stochastic optimization algorithm called g-SODA for the problem of finding process controls that minimize the expectation of cost while satisfying multiple deterministic and stochastic feasibility constraints with a given high probability, and conducted an experimental study to demonstrate that g-SODA considerably outperforms the best simulation-based algorithms.
 %This algorithm is based on performing (1) a series of deterministic approximations to produce a candidate set of near-optimal control settings for the process, and (2) stochastic simulations on the candidate set using optimal simulation budget allocation methods.  
 %Such an algorithm can be easily incorporated into any DSS (e.g., see the system in \cite{Brodsky2017ieeebd}) to provide an integrated and seamless support for decision makers such as production engineers to solve the one-stage stochastic optimization problem considered here.
-This paper also demonstrates g-SODA on a use case of a real-world Heat Sink production and  conducts an experimental study that shows that g-SODA significantly outperforms the best competing algorithm by 48\% after one day and by 25\% after three days.
+%This paper also demonstrates g-SODA on a use case of a real-world Heat Sink production and  conducts an experimental study that shows that g-SODA significantly outperforms the best competing algorithm by 48\% after one day and by 25\% after three days.
 
-Future research direction include: 
+Future research direction include (1) comparing g-SODA with additional algorithms, including Bayesian optimization, and (2) studying how evolutionary and other local search algorithms can be leveraged to improve the selection and refinement phase of g-SODA.
 %(1) dynamically executing the inflate deflate phase and candidate refinement phase of g-SODA to improve the exploration of the search space,
 %This dynamic execution also allows g-SODA to eventually converge towards the global optima as guaranteed by the competing algorithms considered in the experimental study. 
-(1) compare g-SODA's performance to methods and algorithms 
+%(1) compare g-SODA's performance to methods and algorithms 
 %including Bayesian optimization 
-that solve the same problem using techniques that typically extract the mathematical structure of the problem using black box simulations, and 
+%that solve the same problem using techniques that typically extract the mathematical structure of the problem using black box simulations, and 
 %Such a comparison may result in a better understanding of how g-SODA performs against similar but known to be less efficient approaches than g-SODA.
-(2) it would be interesting to research on whether evolutionary and other metaheuristic algorithms can be leveraged to improve the selection and refinement of the candidates collected in the \textit{InflateDeflate} phase.
+%(2) it would be interesting to research on whether evolutionary and other metaheuristic algorithms can be leveraged to improve the selection and refinement of the candidates collected in the \textit{InflateDeflate} phase.
 
 \setstretch{1.5}
 %\section*{Acknowledgement}
